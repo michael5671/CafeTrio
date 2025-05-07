@@ -47,6 +47,7 @@ fun SignUpScreen(
     onBackClick: () -> Unit = {},
     onSignUpSubmit: (String) -> Unit = {}
 ) {
+    var emailAddress by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
     var birthday by remember { mutableStateOf("") }
@@ -109,7 +110,8 @@ fun SignUpScreen(
     }
     
     // Form validation
-    val isFormValid = phoneNumber.isNotEmpty() && 
+    val isFormValid = emailAddress.isNotEmpty() &&
+                     phoneNumber.isNotEmpty() && 
                      fullName.isNotEmpty() && 
                      birthday.isNotEmpty() && 
                      gender.isNotEmpty() && 
@@ -187,6 +189,36 @@ fun SignUpScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
             )
+            
+            // Ô nhập địa chỉ Gmail
+            OutlinedTextField(
+                value = emailAddress,
+                onValueChange = { emailAddress = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                placeholder = { 
+                    Text(
+                        "Nhập địa chỉ gmail", 
+                        color = CafeGrayText,
+                        fontSize = 16.sp
+                    ) 
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.LightGray,
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true,
+                shape = RoundedCornerShape(6.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
             
             // Ô nhập số điện thoại (giống LoginScreen)
             OutlinedTextField(
@@ -439,7 +471,7 @@ fun SignUpScreen(
                     onDone = {
                         focusManager.clearFocus()
                         if (isFormValid) {
-                            onSignUpSubmit(phoneNumber)
+                            onSignUpSubmit(emailAddress)
                         }
                     }
                 ),
@@ -464,7 +496,7 @@ fun SignUpScreen(
             Button(
                 onClick = { 
                     if (isFormValid) {
-                        onSignUpSubmit(phoneNumber) 
+                        onSignUpSubmit(emailAddress) 
                     }
                 },
                 modifier = Modifier

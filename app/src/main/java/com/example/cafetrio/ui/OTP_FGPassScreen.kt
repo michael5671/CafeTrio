@@ -24,7 +24,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun OTP_FGPassScreen(
-    phoneNumber: String = "+84981234567",
+    emailAddress: String = "example@gmail.com",
     onBackClick: () -> Unit = {},
     onVerifyOtp: (String) -> Unit = {}
 ) {
@@ -81,9 +81,9 @@ fun OTP_FGPassScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Thông báo số điện thoại
+            // Thông báo gmail
             Text(
-                text = "Mã xác thực gồm 6 số đã được gửi đến số điện thoại $phoneNumber",
+                text = "Mã xác thực gồm 6 số đã được gửi đến địa chỉ gmail $emailAddress",
                 color = CafeBrown,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,

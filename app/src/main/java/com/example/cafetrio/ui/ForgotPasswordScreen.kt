@@ -31,9 +31,9 @@ import com.example.cafetrio.ui.theme.*
 @Composable
 fun ForgotPasswordScreen(
     onBackToLogin: () -> Unit = {},
-    onSubmitPhone: (String) -> Unit = {}
+    onSubmitEmail: (String) -> Unit = {}
 ) {
-    var phoneNumber by remember { mutableStateOf("") }
+    var emailAddress by remember { mutableStateOf("") }
     
     Column(
         modifier = Modifier
@@ -130,16 +130,16 @@ fun ForgotPasswordScreen(
                         .clickable(onClick = onBackToLogin)
                 )
                 
-                // Ô nhập số điện thoại
+                // Ô nhập địa chỉ gmail
                 OutlinedTextField(
-                    value = phoneNumber,
-                    onValueChange = { phoneNumber = it },
+                    value = emailAddress,
+                    onValueChange = { emailAddress = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     placeholder = { 
                         Text(
-                            "Nhập số điện thoại", 
+                            "Nhập địa chỉ gmail", 
                             color = CafeGrayText,
                             fontSize = 18.sp
                         ) 
@@ -150,35 +150,7 @@ fun ForgotPasswordScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White
                     ),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    leadingIcon = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            // Icon Vietnam 
-                            Image(
-                                painter = painterResource(id = R.drawable.vietnam_ic),
-                                contentDescription = "Vietnam icon",
-                                modifier = Modifier.size(24.dp)
-                            )
-                            
-                            // Text +84 bên cạnh icon
-                            Text(
-                                text = "+84",
-                                color = Color.Black,
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(horizontal = 4.dp)
-                            )
-                            
-                            HorizontalDivider(
-                                modifier = Modifier
-                                    .height(24.dp)
-                                    .width(1.dp),
-                                color = Color.LightGray
-                            )
-                        }
-                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true,
                     shape = RoundedCornerShape(6.dp)
                 )
@@ -187,7 +159,7 @@ fun ForgotPasswordScreen(
                 
                 // Nút xác nhận
                 Button(
-                    onClick = { onSubmitPhone(phoneNumber) },
+                    onClick = { onSubmitEmail(emailAddress) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(45.dp),

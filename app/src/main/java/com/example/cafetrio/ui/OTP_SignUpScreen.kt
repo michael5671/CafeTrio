@@ -32,7 +32,7 @@ import java.util.Locale
 
 @Composable
 fun OTP_SignUpScreen(
-    phoneNumber: String = "+84981234567",
+    emailAddress: String = "example@gmail.com",
     onBackClick: () -> Unit = {},
     onVerifyOtp: (String) -> Unit = {}
 ) {
@@ -89,9 +89,9 @@ fun OTP_SignUpScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Thông báo số điện thoại
+            // Thông báo email
             Text(
-                text = "Mã xác thực gồm 6 số đã được gửi đến số điện thoại $phoneNumber",
+                text = "Mã xác thực gồm 6 số đã được gửi đến địa chỉ gmail $emailAddress",
                 color = CafeBrown,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
