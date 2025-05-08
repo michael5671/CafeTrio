@@ -1,5 +1,6 @@
 package com.example.cafetrio.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -21,6 +23,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cafetrio.data.api.ApiClient
+import com.example.cafetrio.data.dto.ResendOtpRequest
+import com.example.cafetrio.data.dto.VerifyOtpRequest
 import com.example.cafetrio.ui.components.OtpTextField
 import com.example.cafetrio.ui.theme.CafeBeige
 import com.example.cafetrio.ui.theme.CafeBrown
@@ -28,6 +33,9 @@ import com.example.cafetrio.ui.theme.CafeButtonBackground
 import com.example.cafetrio.ui.theme.CafeLoginBackground
 import com.example.cafetrio.ui.theme.CafeTrioTheme
 import kotlinx.coroutines.delay
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.util.Locale
 
 @Composable
@@ -38,6 +46,10 @@ fun OTP_SignUpScreen(
 ) {
     var otpValue by remember { mutableStateOf("") }
     var timeRemaining by remember { mutableStateOf(120) } // 2 phút = 120 giây
+    var isResendEnabled by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    val context = LocalContext.current
     
     // Đếm ngược thời gian
     LaunchedEffect(key1 = true) {
@@ -45,12 +57,58 @@ fun OTP_SignUpScreen(
             delay(1000) // Đợi 1 giây
             timeRemaining--
         }
+        isResendEnabled = true
     }
     
     // Format thời gian còn lại dạng mm:ss
     val minutes = timeRemaining / 60
     val seconds = timeRemaining % 60
     val timeString = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+    
+    // Hàm xử lý khi nhấn xác nhận OTP
+    val handleVerifyOtp = {
+        isLoading = true
+        
+        ApiClient.apiService.verifyOtp(otpValue).enqueue(object : Callback<Void> {
+            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                isLoading = false
+                if (response.isSuccessful) {
+                    Toast.makeText(context, "Xác thực OTP thành công!", Toast.LENGTH_SHORT).show()
+                    onVerifyOtp(otpValue)
+                } else {
+                    Toast.makeText(context, "Mã OTP không đúng hoặc đã hết hạn", Toast.LENGTH_SHORT).show()
+                }
+            }
+            
+            override fun onFailure(call: Call<Void>, t: Throwable) {
+                isLoading = false
+                Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+    
+    // Hàm gửi lại OTP
+    val handleResendOtp = {
+        if (isResendEnabled || timeRemaining <= 0) {
+            val request = ResendOtpRequest(email = emailAddress)
+            
+            ApiClient.apiService.resendOtp(request).enqueue(object : Callback<Void> {
+                override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(context, "Đã gửi lại mã OTP", Toast.LENGTH_SHORT).show()
+                        timeRemaining = 120 // Reset thời gian đếm ngược
+                        isResendEnabled = false
+                    } else {
+                        Toast.makeText(context, "Không thể gửi lại mã OTP: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                
+                override fun onFailure(call: Call<Void>, t: Throwable) {
+                    Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+    }
     
     Box(
         modifier = Modifier
@@ -69,6 +127,14 @@ fun OTP_SignUpScreen(
                 .clickable(onClick = onBackClick)
                 .padding(24.dp)
         )
+        
+        // Hiển thị loading khi đang xử lý API
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = CafeBrown
+            )
+        }
         
         // Nội dung chính - căn giữa màn hình
         Column(
@@ -126,14 +192,18 @@ fun OTP_SignUpScreen(
                 color = CafeBrown,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clickable(enabled = isResendEnabled || timeRemaining <= 0) {
+                        handleResendOtp()
+                    }
             )
             
             Spacer(modifier = Modifier.height(40.dp))
             
             // Nút xác nhận
             Button(
-                onClick = { onVerifyOtp(otpValue) },
+                onClick = { handleVerifyOtp() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
@@ -142,7 +212,7 @@ fun OTP_SignUpScreen(
                     containerColor = CafeButtonBackground,
                     contentColor = CafeBeige
                 ),
-                enabled = otpValue.length == 6
+                enabled = otpValue.length == 6 && !isLoading
             ) {
                 Text(
                     text = "XÁC NHẬN",

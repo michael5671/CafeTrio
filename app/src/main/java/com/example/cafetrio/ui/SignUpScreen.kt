@@ -1,6 +1,7 @@
 package com.example.cafetrio.ui
 
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +33,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cafetrio.R
+import com.example.cafetrio.data.api.ApiClient
+import com.example.cafetrio.data.dto.RegisterRequest
 import com.example.cafetrio.ui.theme.CafeBeige
 import com.example.cafetrio.ui.theme.CafeBrown
 import com.example.cafetrio.ui.theme.CafeButtonBackground
@@ -40,12 +43,16 @@ import com.example.cafetrio.ui.theme.CafeLoginBackground
 import com.example.cafetrio.ui.theme.CafeTrioTheme
 import java.text.SimpleDateFormat
 import java.util.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     onBackClick: () -> Unit = {},
-    onSignUpSubmit: (String) -> Unit = {}
+    onSignUpSubmit: (String) -> Unit = {},
+    onNavigateToOTP: (String) -> Unit = {}
 ) {
     var emailAddress by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
@@ -494,9 +501,35 @@ fun SignUpScreen(
             
             // Nút xác nhận
             Button(
-                onClick = { 
+                onClick = {
                     if (isFormValid) {
-                        onSignUpSubmit(emailAddress) 
+                        val request = RegisterRequest(
+                            email = emailAddress,
+                            password = password,
+                            passwordConfirm = confirmPassword,
+                            fullName = fullName,
+//                            phone = phoneNumber
+                        )
+
+                        ApiClient.apiService.register(request).enqueue(object : Callback<Void> {
+                            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                                if (response.isSuccessful) {
+                                    Toast.makeText(context, "Đăng ký thành công! Vui lòng xác thực OTP", Toast.LENGTH_SHORT).show()
+                                    onNavigateToOTP(emailAddress)
+                                } else {
+                                    val errorMsg = when(response.code()) {
+                                        400 -> "Thông tin đăng ký không hợp lệ"
+                                        409 -> "Email đã tồn tại trong hệ thống"
+                                        else -> "Đăng ký thất bại: ${response.code()}"
+                                    }
+                                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+
+                            override fun onFailure(call: Call<Void>, t: Throwable) {
+                                Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        })
                     }
                 },
                 modifier = Modifier

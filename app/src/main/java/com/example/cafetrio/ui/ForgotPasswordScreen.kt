@@ -1,5 +1,6 @@
 package com.example.cafetrio.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -26,7 +28,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cafetrio.R
+import com.example.cafetrio.data.api.ApiClient
 import com.example.cafetrio.ui.theme.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @Composable
 fun ForgotPasswordScreen(
@@ -34,6 +40,8 @@ fun ForgotPasswordScreen(
     onSubmitEmail: (String) -> Unit = {}
 ) {
     var emailAddress by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     
     Column(
         modifier = Modifier
@@ -152,27 +160,65 @@ fun ForgotPasswordScreen(
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true,
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(6.dp),
+                    enabled = !isLoading
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 // Nút xác nhận
                 Button(
-                    onClick = { onSubmitEmail(emailAddress) },
+                    onClick = { 
+                        if (emailAddress.isNotEmpty()) {
+                            isLoading = true
+                            
+                            ApiClient.apiService.forgotPassword(emailAddress).enqueue(object : Callback<Void> {
+                                override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                                    isLoading = false
+                                    if (response.isSuccessful) {
+                                        Toast.makeText(context, "Mã xác nhận đã được gửi đến email của bạn", Toast.LENGTH_SHORT).show()
+                                        onSubmitEmail(emailAddress)
+                                    } else {
+                                        val errorMsg = when(response.code()) {
+                                            404 -> "Email không tồn tại trong hệ thống"
+                                            429 -> "Đã gửi quá nhiều yêu cầu, vui lòng thử lại sau"
+                                            else -> "Lỗi: ${response.code()}"
+                                        }
+                                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                
+                                override fun onFailure(call: Call<Void>, t: Throwable) {
+                                    isLoading = false
+                                    Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            })
+                        } else {
+                            Toast.makeText(context, "Vui lòng nhập địa chỉ email", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(45.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = CafeButtonBackground
                     ),
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(6.dp),
+                    enabled = !isLoading
                 ) {
-                    Text(
-                        text = "XÁC NHẬN",
-                        color = CafeBeige,
-                        fontSize = 16.sp
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = CafeBeige,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "XÁC NHẬN",
+                            color = CafeBeige,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
             

@@ -1,5 +1,6 @@
 package com.example.cafetrio.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -25,7 +27,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cafetrio.R
+import com.example.cafetrio.data.api.ApiClient
+import com.example.cafetrio.data.dto.LoginRequest
+import com.example.cafetrio.data.dto.LoginResponse
 import com.example.cafetrio.ui.theme.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+
 
 @Composable
 fun LoginScreen(
@@ -33,9 +42,12 @@ fun LoginScreen(
     onSignUpClick: () -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
-    var phoneNumber by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    val context = LocalContext.current
     
     Column(
         modifier = Modifier
@@ -92,10 +104,10 @@ fun LoginScreen(
                 modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
             )
             
-            // Ô nhập số điện thoại
+            // Ô nhập email
             OutlinedTextField(
-                value = phoneNumber,
-                onValueChange = { phoneNumber = it },
+                value = email,
+                onValueChange = { email = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -191,20 +203,68 @@ fun LoginScreen(
             
             // Nút đăng nhập
             Button(
-                onClick = { onLoginClick() },
+                onClick = { 
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
+                        val loginRequest = LoginRequest(
+                            email = email,
+                            password = password,
+                            rememberMe = rememberMe
+                        )
+                        
+                        ApiClient.apiService.login(loginRequest).enqueue(object : Callback<LoginResponse> {
+                            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                                isLoading = false
+                                if (response.isSuccessful) {
+                                    val loginResponse = response.body()
+                                    if (loginResponse != null) {
+                                        // Lưu token và thông tin người dùng vào AuthManager
+
+                                        
+                                        Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                        onLoginClick()
+                                    }
+                                } else {
+                                    val errorMsg = when(response.code()) {
+                                        401 -> "Email hoặc mật khẩu không đúng"
+                                        404 -> "Tài khoản không tồn tại"
+                                        else -> "Đăng nhập thất bại: ${response.code()}"
+                                    }
+                                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            
+                            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                                isLoading = false
+                                Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        })
+                    } else {
+                        Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(45.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = CafeButtonBackground
                 ),
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(6.dp),
+                enabled = !isLoading
             ) {
-                Text(
-                    text = "Đăng Nhập",
-                    color = CafeBeige,
-                    fontSize = 16.sp
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = CafeBeige,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Đăng Nhập",
+                        color = CafeBeige,
+                        fontSize = 16.sp
+                    )
+                }
             }
             
             // Phần đăng ký tài khoản mới

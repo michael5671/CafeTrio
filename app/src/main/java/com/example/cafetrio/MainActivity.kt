@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
                 var showSplash by remember { mutableStateOf(true) }
                 var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
                 var emailForOtp by remember { mutableStateOf("") }
+                var otpToken by remember { mutableStateOf("") }
                 
                 AnimatedContent(
                     targetState = showSplash,
@@ -94,10 +95,12 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = { currentScreen = Screen.ForgotPassword },
                                     onVerifyOtp = { otp ->
                                         // Chuyển đến màn hình đổi mật khẩu sau khi xác thực OTP
+                                        otpToken = otp
                                         currentScreen = Screen.ChangePassword
                                     }
                                 )
                                 Screen.ChangePassword -> ChangePasswordScreen(
+                                    email = emailForOtp,
                                     onBackClick = { currentScreen = Screen.OtpVerification },
                                     onChangePasswordSubmit = {
                                         // Quay về màn hình đăng nhập sau khi đổi mật khẩu
@@ -108,6 +111,10 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = { currentScreen = Screen.Login },
                                     onSignUpSubmit = { email ->
                                         // Chuyển đến màn hình xác thực OTP khi đăng ký
+                                        emailForOtp = email
+                                        currentScreen = Screen.OtpSignUp
+                                    },
+                                    onNavigateToOTP = { email ->
                                         emailForOtp = email
                                         currentScreen = Screen.OtpSignUp
                                     }
