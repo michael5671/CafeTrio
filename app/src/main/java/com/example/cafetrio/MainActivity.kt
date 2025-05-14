@@ -18,8 +18,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.cafetrio.data.models.Order
+import com.example.cafetrio.ui.BookedScreen
 import com.example.cafetrio.ui.CartScreen
 import com.example.cafetrio.ui.ChangePasswordScreen
+import com.example.cafetrio.ui.CouponScreen
 import com.example.cafetrio.ui.DifferScreen
 import com.example.cafetrio.ui.ForgotPasswordScreen
 import com.example.cafetrio.ui.LoginScreen
@@ -144,7 +146,9 @@ class MainActivity : ComponentActivity() {
                                     onNavigate = { destination ->
                                         when {
                                             destination == "differ" -> currentScreen = Screen.Differ
+                                            destination == "order" -> currentScreen = Screen.Booked
                                             destination == "orders" -> currentScreen = Screen.Cart
+                                            destination == "rewards" -> currentScreen = Screen.Coupon
                                             destination in listOf("xoai_granola", "phuc_bon_tu_granola", "oolong_tu_quy_vai", "oolong_kim_quat_tran_chau", "tra_sua_oolong_tu_quy_suong_sao") -> {
                                                 productId = destination
                                                 currentScreen = Screen.ProductDetail
@@ -197,6 +201,9 @@ class MainActivity : ComponentActivity() {
                                     onNavigationItemClick = { destination ->
                                         when (destination) {
                                             "home" -> currentScreen = Screen.Main
+                                            "order" -> currentScreen = Screen.Booked
+                                            "rewards" -> currentScreen = Screen.Coupon
+                                            "differ" -> currentScreen = Screen.Differ // Navigate to itself (refresh)
                                             else -> { /* Handle other navigation */ }
                                         }
                                     },
@@ -230,6 +237,32 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = Screen.Cart
                                     }
                                 }
+                                Screen.Coupon -> {
+                                    CouponScreen(
+                                        onBackClick = { currentScreen = Screen.Main },
+                                        onNavigationItemClick = { destination ->
+                                            when (destination) {
+                                                "home" -> currentScreen = Screen.Main
+                                                "order" -> currentScreen = Screen.Booked
+                                                "rewards" -> currentScreen = Screen.Coupon // Navigate to itself (refresh)
+                                                "differ" -> currentScreen = Screen.Differ
+                                                else -> { /* Handle other navigation */ }
+                                            }
+                                        }
+                                    )
+                                }
+                                Screen.Booked -> BookedScreen(
+                                    onBackClick = { currentScreen = Screen.Main },
+                                    onNavigationItemClick = { destination ->
+                                        when (destination) {
+                                            "home" -> currentScreen = Screen.Main
+                                            "order" -> currentScreen = Screen.Booked // Navigate to itself (refresh)
+                                            "rewards" -> currentScreen = Screen.Coupon
+                                            "differ" -> currentScreen = Screen.Differ
+                                            else -> { /* Handle other navigation */ }
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -251,7 +284,9 @@ enum class Screen {
     Differ,
     ProductDetail,
     Cart,
-    Payment
+    Payment,
+    Coupon,
+    Booked
 }
 
 @Composable

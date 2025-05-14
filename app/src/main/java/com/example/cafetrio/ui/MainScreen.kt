@@ -184,7 +184,7 @@ fun MainScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { /* TODO: Navigate to Order */ }
+                            .clickable { onNavigate("order") }
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_booked),
@@ -202,7 +202,7 @@ fun MainScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { /* TODO: Navigate to Rewards */ }
+                            .clickable { onNavigate("rewards") }
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_voucher),
