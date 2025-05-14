@@ -24,6 +24,7 @@ import com.example.cafetrio.ui.LoginScreen
 import com.example.cafetrio.ui.MainScreen
 import com.example.cafetrio.ui.OTP_FGPassScreen
 import com.example.cafetrio.ui.OTP_SignUpScreen
+import com.example.cafetrio.ui.PrdScreen
 import com.example.cafetrio.ui.SignUpScreen
 import com.example.cafetrio.ui.SplashScreen
 import com.example.cafetrio.ui.theme.CafeTrioTheme
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
+                var productId by remember { mutableStateOf("") }
                 
                 AnimatedContent(
                     targetState = showSplash,
@@ -131,12 +133,51 @@ class MainActivity : ComponentActivity() {
                                     onNotificationClick = { /* TODO */ },
                                     onMenuClick = { /* TODO */ },
                                     onNavigate = { destination ->
-                                        when (destination) {
-                                            "differ" -> currentScreen = Screen.Differ
+                                        when {
+                                            destination == "differ" -> currentScreen = Screen.Differ
+                                            destination in listOf("xoai_granola", "phuc_bon_tu_granola", "oolong_tu_quy_vai", "oolong_kim_quat_tran_chau", "tra_sua_oolong_tu_quy_suong_sao") -> {
+                                                productId = destination
+                                                currentScreen = Screen.ProductDetail
+                                            }
                                             else -> { /* Handle other navigation */ }
                                         }
                                     }
                                 )
+                                Screen.ProductDetail -> {
+                                    val productDetails = when (productId) {
+                                        "xoai_granola" -> Triple(
+                                            "Smoothie Xoài Nhiệt Đới Granola",
+                                            "65.000đ",
+                                            R.drawable.xoai_granola
+                                        )
+                                        "phuc_bon_tu_granola" -> Triple(
+                                            "Smoothie Phúc Bồn Tử Granola",
+                                            "65.000đ",
+                                            R.drawable.phuc_bon_tu_granola
+                                        )
+                                        "oolong_tu_quy_vai" -> Triple(
+                                            "Oolong Tứ Quý Vải",
+                                            "59.000đ",
+                                            R.drawable.oolong_tu_quy_vai
+                                        )
+                                        "oolong_kim_quat_tran_chau" -> Triple(
+                                            "Oolong Tứ Quý Kim Quất Trân Châu",
+                                            "59.000đ",
+                                            R.drawable.oolong_kim_quat_tran_chau
+                                        )
+                                        "tra_sua_oolong_tu_quy_suong_sao" -> Triple(
+                                            "Trà Sữa Oolong Tứ Quý Sương Sáo",
+                                            "55.000đ",
+                                            R.drawable.tra_sua_oolong_tu_quy_suong_sao
+                                        )
+                                        else -> Triple("Sản phẩm", "0đ", R.drawable.xoai_granola)
+                                    }
+                                    
+                                    PrdScreen(
+                                        productId = productId,
+                                        onBackClick = { currentScreen = Screen.Main }
+                                    )
+                                }
                                 Screen.Differ -> DifferScreen(
                                     onNavigationItemClick = { destination ->
                                         when (destination) {
@@ -167,7 +208,8 @@ enum class Screen {
     SignUp,
     OtpSignUp,
     Main,
-    Differ
+    Differ,
+    ProductDetail
 }
 
 @Composable

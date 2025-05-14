@@ -1,6 +1,7 @@
 package com.example.cafetrio.ui
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,12 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,6 +48,8 @@ fun ChangePasswordScreen(
 ) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -184,10 +189,21 @@ fun ChangePasswordScreen(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Next
                 ),
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
                 shape = RoundedCornerShape(6.dp),
-                enabled = !isLoading
+                enabled = !isLoading,
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Image(
+                            painter = painterResource(
+                                id = if (passwordVisible) R.drawable.eye else R.drawable.close_eye
+                            ),
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -224,10 +240,21 @@ fun ChangePasswordScreen(
                         }
                     }
                 ),
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
                 shape = RoundedCornerShape(6.dp),
-                enabled = !isLoading
+                enabled = !isLoading,
+                trailingIcon = {
+                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                        Image(
+                            painter = painterResource(
+                                id = if (confirmPasswordVisible) R.drawable.eye else R.drawable.close_eye
+                            ),
+                            contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             )
 
             // Hiển thị thông báo nếu mật khẩu không khớp

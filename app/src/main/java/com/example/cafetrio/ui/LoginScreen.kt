@@ -20,8 +20,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -44,6 +46,7 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     
@@ -140,7 +143,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 placeholder = { Text("Nhập mật khẩu", color = CafeGrayText, fontSize = 18.sp) },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.LightGray,
                     unfocusedBorderColor = Color.LightGray,
@@ -148,7 +151,18 @@ fun LoginScreen(
                     unfocusedContainerColor = Color.White
                 ),
                 singleLine = true,
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(6.dp),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Image(
+                            painter = painterResource(
+                                id = if (passwordVisible) R.drawable.eye else R.drawable.close_eye
+                            ),
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             )
             
             // Dòng Ghi nhớ tôi và Quên mật khẩu
