@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cafetrio.R
+import com.example.cafetrio.data.AuthManager
 import com.example.cafetrio.data.api.ApiClient
 import com.example.cafetrio.data.dto.LoginRequest
 import com.example.cafetrio.data.dto.LoginResponse
@@ -44,13 +45,16 @@ fun LoginScreen(
     onSignUpClick: () -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    
     val context = LocalContext.current
+    val authManager = remember { AuthManager.getInstance(context) }
+    
+    // Lấy dữ liệu đã lưu
+    var email by remember { mutableStateOf(authManager.getSavedEmail()) }
+    var password by remember { mutableStateOf(authManager.getSavedPassword()) }
+    var rememberMe by remember { mutableStateOf(authManager.isRememberMeEnabled()) }
+    
+    var passwordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
     
     Column(
         modifier = Modifier
@@ -232,8 +236,8 @@ fun LoginScreen(
                                 if (response.isSuccessful) {
                                     val loginResponse = response.body()
                                     if (loginResponse != null) {
-                                        // Lưu token và thông tin người dùng vào AuthManager
-
+                                        // Lưu thông tin đăng nhập nếu chọn "Ghi nhớ tôi"
+                                        authManager.saveLoginCredentials(email, password, rememberMe)
                                         
                                         Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
                                         onLoginClick()

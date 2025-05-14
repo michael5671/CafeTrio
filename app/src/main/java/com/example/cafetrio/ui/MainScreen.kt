@@ -733,18 +733,17 @@ fun ProductItem(
             )
             
             // Nút thêm sản phẩm
-            IconButton(
-                onClick = { /* TODO: Handle add product */ },
+            Box(
                 modifier = Modifier
                     .size(36.dp)
                     .background(Color(0xFF74512D), CircleShape)
-                    .padding(4.dp)
+                    .clickable { /* TODO: Handle add product */ },
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
+                Image(
                     painter = painterResource(id = R.drawable.button_plus),
                     contentDescription = "Add to cart",
-                    modifier = Modifier.size(20.dp),
-                    tint = Color.White
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

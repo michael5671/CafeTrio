@@ -12,7 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,8 +23,10 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,13 +34,26 @@ import com.example.cafetrio.R
 import com.example.cafetrio.ui.theme.CafeBrown
 import com.example.cafetrio.ui.theme.CafeBeige
 import com.example.cafetrio.ui.theme.CafeTrioTheme
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.text.buildAnnotatedString
+import com.example.cafetrio.data.CartManager
+import com.example.cafetrio.data.models.CartItem
+import com.example.cafetrio.utils.FormatUtils
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrdScreen(
     productId: String,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onViewCart: () -> Unit = {},
+    onNavigateToMain: () -> Unit = {}
 ) {
+    // State for showing success dialog
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    
     // Product data for Xoài Granola
     val product = ProductData(
         id = "xoai_granola",
@@ -76,30 +92,115 @@ fun PrdScreen(
 
     val backgroundColor = Color(0xFFF8F1DF) // Beige color matching the image
     
-    Scaffold(
-        containerColor = backgroundColor,
-        topBar = {
+    // Cart manager to add items
+    val cartManager = remember { CartManager.getInstance() }
+    
+    // Success Dialog
+    if (showSuccessDialog) {
+        Dialog(
+            onDismissRequest = { 
+                showSuccessDialog = false
+                onNavigateToMain() // Navigate to MainScreen when dialog is dismissed
+            },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
+                    .fillMaxWidth(0.9f)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color(0xFFFDF6E3))
+                    .padding(24.dp)
             ) {
-                // Close button in top-right
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f))
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_back),
-                        contentDescription = "Đóng",
-                        tint = Color.White
+                    // Close button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Đóng",
+                            tint = Color(0xFF5D4037),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(24.dp)
+                                .clickable { 
+                                    showSuccessDialog = false
+                                    onNavigateToMain() // Navigate to MainScreen when close button is clicked
+                                }
+                        )
+                    }
+                    
+                    // Dialog content
+                    Text(
+                        text = "Thông báo",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5D4037),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    Text(
+                        text = "Chọn sản phẩm thành công!",
+                        fontSize = 18.sp,
+                        color = Color(0xFF5D4037),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Text(
+                        text = buildAnnotatedString {
+                            append("Kiểm tra đơn hàng của bạn tại ")
+                            withStyle(
+                                style = SpanStyle(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF5D4037)
+                                )
+                            ) {
+                                append("Đơn hàng")
+                            }
+                        },
+                        fontSize = 16.sp,
+                        color = Color(0xFF5D4037),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .clickable { 
+                                showSuccessDialog = false
+                                onViewCart()
+                            }
                     )
                 }
             }
+        }
+    }
+
+    Scaffold(
+        containerColor = backgroundColor,
+        topBar = {
+            TopAppBar(
+                title = { }, // Empty title
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = CafeBrown
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = backgroundColor
+                )
+            )
         }
     ) { paddingValues ->
         Column(
@@ -121,6 +222,22 @@ fun PrdScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+                
+                // Banner "NEW" ở góc trên bên trái
+                Box(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopStart)
+                        .background(Color(0xFFFF3333), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "NEW",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             
             // Product info
@@ -302,22 +419,96 @@ fun PrdScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Add to cart button (not visible in the image but keeping it for functionality)
-                Button(
-                    onClick = { /* TODO: Add to cart logic */ },
+                // Quantity selector and add to cart button
+                var quantity by remember { mutableStateOf(1) }
+                
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF8D6E63)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                        .padding(bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Minus button
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF9E8D9))
+                            .clickable {
+                                if (quantity > 1) quantity--
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "−",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF5D4037)
+                        )
+                    }
+                    
+                    // Quantity display
                     Text(
-                        text = "Thêm vào giỏ hàng - ${formatPrice(totalPrice)}",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        text = quantity.toString(),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5D4037),
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .width(30.dp),
+                        textAlign = TextAlign.Center
                     )
+                    
+                    // Plus button
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF9E8D9))
+                            .clickable { quantity++ },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "+",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF5D4037)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // Price button
+                    Button(
+                        onClick = { 
+                            // Add to cart with selected options
+                            val cartItem = CartItem(
+                                id = UUID.randomUUID().toString(),
+                                productName = product.name,
+                                size = selectedSize,
+                                quantity = quantity,
+                                price = totalPrice,
+                                toppings = selectedToppings.toList(),
+                                note = noteText
+                            )
+                            cartManager.addToCart(cartItem)
+                            showSuccessDialog = true
+                        },
+                        modifier = Modifier
+                            .height(56.dp)
+                            .weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF5D4037)
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = FormatUtils.formatPrice(totalPrice * quantity),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
@@ -439,11 +630,6 @@ fun ToppingOption(
             textAlign = TextAlign.End
         )
     }
-}
-
-// Helper function to format the price
-fun formatPrice(priceInVND: Int): String {
-    return "${priceInVND.toString().chunked(3).joinToString(".")}đ"
 }
 
 // Data class for product information

@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.cafetrio.data.models.Order
+import com.example.cafetrio.ui.CartScreen
 import com.example.cafetrio.ui.ChangePasswordScreen
 import com.example.cafetrio.ui.DifferScreen
 import com.example.cafetrio.ui.ForgotPasswordScreen
@@ -24,6 +26,7 @@ import com.example.cafetrio.ui.LoginScreen
 import com.example.cafetrio.ui.MainScreen
 import com.example.cafetrio.ui.OTP_FGPassScreen
 import com.example.cafetrio.ui.OTP_SignUpScreen
+import com.example.cafetrio.ui.PaymentScreen
 import com.example.cafetrio.ui.PrdScreen
 import com.example.cafetrio.ui.SignUpScreen
 import com.example.cafetrio.ui.SplashScreen
@@ -41,6 +44,7 @@ class MainActivity : ComponentActivity() {
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
                 var productId by remember { mutableStateOf("") }
+                var selectedOrder by remember { mutableStateOf<Order?>(null) }
                 
                 AnimatedContent(
                     targetState = showSplash,
@@ -69,6 +73,11 @@ class MainActivity : ComponentActivity() {
                                     initialState == Screen.Login && targetState == Screen.Main -> {
                                         fadeIn(animationSpec = tween(800)) togetherWith
                                         fadeOut(animationSpec = tween(800))
+                                    }
+                                    // Faster transition for ProductDetail to Main
+                                    targetState == Screen.Main && initialState == Screen.ProductDetail -> {
+                                        fadeIn(animationSpec = tween(150)) togetherWith
+                                        fadeOut(animationSpec = tween(150))
                                     }
                                     // Default transition for other screens
                                     else -> {
@@ -135,6 +144,7 @@ class MainActivity : ComponentActivity() {
                                     onNavigate = { destination ->
                                         when {
                                             destination == "differ" -> currentScreen = Screen.Differ
+                                            destination == "orders" -> currentScreen = Screen.Cart
                                             destination in listOf("xoai_granola", "phuc_bon_tu_granola", "oolong_tu_quy_vai", "oolong_kim_quat_tran_chau", "tra_sua_oolong_tu_quy_suong_sao") -> {
                                                 productId = destination
                                                 currentScreen = Screen.ProductDetail
@@ -175,7 +185,12 @@ class MainActivity : ComponentActivity() {
                                     
                                     PrdScreen(
                                         productId = productId,
-                                        onBackClick = { currentScreen = Screen.Main }
+                                        onBackClick = { currentScreen = Screen.Main },
+                                        onViewCart = { currentScreen = Screen.Cart },
+                                        onNavigateToMain = {
+                                            // Navigate back to MainScreen when success dialog is dismissed
+                                            currentScreen = Screen.Main
+                                        }
                                     )
                                 }
                                 Screen.Differ -> DifferScreen(
@@ -190,6 +205,31 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = Screen.Login
                                     }
                                 )
+                                Screen.Cart -> CartScreen(
+                                    onBackClick = { currentScreen = Screen.Main },
+                                    onOrderClick = { order -> 
+                                        selectedOrder = order
+                                        currentScreen = Screen.Payment
+                                    }
+                                )
+                                Screen.Payment -> {
+                                    selectedOrder?.let { order ->
+                                        PaymentScreen(
+                                            order = order,
+                                            onBackClick = { currentScreen = Screen.Cart },
+                                            onPlaceOrderClick = {
+                                                // This is no longer needed since we're handling navigation through onNavigateToMain
+                                            },
+                                            onNavigateToMain = {
+                                                // Navigate to main screen when the success dialog is dismissed
+                                                currentScreen = Screen.Main
+                                            }
+                                        )
+                                    } ?: run {
+                                        // Fallback if no order is selected
+                                        currentScreen = Screen.Cart
+                                    }
+                                }
                             }
                         }
                     }
@@ -209,7 +249,9 @@ enum class Screen {
     OtpSignUp,
     Main,
     Differ,
-    ProductDetail
+    ProductDetail,
+    Cart,
+    Payment
 }
 
 @Composable
