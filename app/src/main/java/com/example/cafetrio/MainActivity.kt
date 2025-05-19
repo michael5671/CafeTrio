@@ -16,7 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import android.content.Context
 import com.example.cafetrio.ui.ChangePasswordScreen
 import com.example.cafetrio.ui.DifferScreen
 import com.example.cafetrio.ui.ForgotPasswordScreen
@@ -36,7 +38,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             CafeTrioTheme {
                 var showSplash by remember { mutableStateOf(true) }
-                var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
+                val context = LocalContext.current
+                val sharedPreferences = remember { context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE) }
+                var currentScreen by remember { 
+                    mutableStateOf<Screen>(if (sharedPreferences.getString("auth_token", null) != null) Screen.Main else Screen.Login) 
+                }
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
                 

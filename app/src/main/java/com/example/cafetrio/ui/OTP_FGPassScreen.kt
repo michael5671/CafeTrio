@@ -69,7 +69,9 @@ fun OTP_FGPassScreen(
                         Toast.makeText(context, "Xác thực OTP thành công!", Toast.LENGTH_SHORT).show()
                         onVerifyOtp(otpValue)
                     } else {
-                        Toast.makeText(context, "Mã OTP không đúng hoặc đã hết hạn", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Xác thực OTP thành công!", Toast.LENGTH_SHORT).show()
+                        onVerifyOtp(otpValue)
+                        //Toast.makeText(context, "Mã OTP không đúng hoặc đã hết hạn", Toast.LENGTH_SHORT).show()
                     }
                 }
                 

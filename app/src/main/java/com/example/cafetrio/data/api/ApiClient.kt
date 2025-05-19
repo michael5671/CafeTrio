@@ -5,7 +5,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 object ApiClient {
-    private const val BASE_URL = "https://api.thienducgroup.com.vn/"
+    private const val BASE_URL = "http://10.0.2.2:8080/"
 
     val apiService: ApiService by lazy {
         val client = OkHttpClient.Builder()

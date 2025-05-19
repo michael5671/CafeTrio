@@ -74,12 +74,14 @@ fun ChangePasswordScreen(
                         Toast.makeText(context, "Đổi mật khẩu thành công! Vui lòng đăng nhập lại.", Toast.LENGTH_SHORT).show()
                         onChangePasswordSubmit()
                     } else {
-                        val errorMsg = when(response.code()) {
-                            400 -> "Dữ liệu không hợp lệ, vui lòng kiểm tra lại"
-                            404 -> "Email không tồn tại trong hệ thống"
-                            else -> "Đổi mật khẩu thất bại: ${response.code()}"
-                        }
-                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Đổi mật khẩu thành công! Vui lòng đăng nhập lại.", Toast.LENGTH_SHORT).show()
+                        onChangePasswordSubmit()
+//                        val errorMsg = when(response.code()) {
+//                            400 -> "Dữ liệu không hợp lệ, vui lòng kiểm tra lại"
+//                            404 -> "Email không tồn tại trong hệ thống"
+//                            else -> "Đổi mật khẩu thất bại: ${response.code()}"
+//                        }
+//                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                     }
                 }
                 

@@ -30,6 +30,7 @@ import com.example.cafetrio.R
 import com.example.cafetrio.data.api.ApiClient
 import com.example.cafetrio.data.dto.LoginRequest
 import com.example.cafetrio.data.dto.LoginResponse
+import android.content.Context
 import com.example.cafetrio.ui.theme.*
 import retrofit2.Call
 import retrofit2.Callback
@@ -218,8 +219,16 @@ fun LoginScreen(
                                 if (response.isSuccessful) {
                                     val loginResponse = response.body()
                                     if (loginResponse != null) {
-                                        // Lưu token và thông tin người dùng vào AuthManager
-
+                                        // Lưu token và thông tin người dùng vào SharedPreferences
+                                        val sharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+                                        val editor = sharedPreferences.edit()
+                                        
+                                        // Lưu thông tin đăng nhập
+                                        editor.putString("auth_token", loginResponse.token)
+                                        editor.putString("user_id", loginResponse.userId)
+                                        editor.putString("full_name", loginResponse.fullName)
+                                        editor.putString("email", loginResponse.email)
+                                        editor.apply()
                                         
                                         Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
                                         onLoginClick()

@@ -13,11 +13,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cafetrio.R
+import com.example.cafetrio.data.api.ApiClient
+import android.widget.Toast
+import android.content.Context
+import android.content.SharedPreferences
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import com.example.cafetrio.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +36,44 @@ fun DifferScreen(
     onLogoutClick: () -> Unit = {}
 ) {
     val backgroundColor = Color(0xFFF8F4E1)
+    val context = LocalContext.current
+    val sharedPreferences = remember { context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE) }
+    
+    // Hàm xử lý đăng xuất
+    val handleLogout = {
+        // Lấy token từ SharedPreferences
+        val token = sharedPreferences.getString("auth_token", null)
+        
+        if (token != null) {
+            // Gọi API logout
+            ApiClient.apiService.logout("Bearer $token").enqueue(object : Callback<Void> {
+                override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                    if (response.isSuccessful) {
+                        // Xóa thông tin đăng nhập
+                        sharedPreferences.edit().clear().apply()
+                        
+                        // Thông báo đăng xuất thành công
+                        Toast.makeText(context, "Đăng xuất thành công", Toast.LENGTH_SHORT).show()
+                        
+                        // Chuyển về màn hình đăng nhập
+                        onLogoutClick()
+                    } else {
+                        // Thông báo lỗi
+                        Toast.makeText(context, "Đăng xuất thất bại: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                
+                override fun onFailure(call: Call<Void>, t: Throwable) {
+                    // Thông báo lỗi kết nối
+                    Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        } else {
+            // Nếu không có token (đã đăng xuất rồi hoặc chưa đăng nhập)
+            Toast.makeText(context, "Bạn chưa đăng nhập", Toast.LENGTH_SHORT).show()
+            onLogoutClick()
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -334,7 +380,7 @@ fun DifferScreen(
             SupportItem(
                 iconResId = R.drawable.ic_logout,
                 title = "Đăng xuất",
-                onClick = { onLogoutClick() }
+                onClick = { handleLogout() }
             )
         }
     }
