@@ -17,7 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.cafetrio.data.AuthManager
 import com.example.cafetrio.data.models.Order
+import com.example.cafetrio.ui.AdminScreen
 import com.example.cafetrio.ui.BookedScreen
 import com.example.cafetrio.ui.CartScreen
 import com.example.cafetrio.ui.ChangePasswordScreen
@@ -47,6 +49,9 @@ class MainActivity : ComponentActivity() {
                 var otpToken by remember { mutableStateOf("") }
                 var productId by remember { mutableStateOf("") }
                 var selectedOrder by remember { mutableStateOf<Order?>(null) }
+                
+                // Get AuthManager instance
+                val authManager = remember { AuthManager.getInstance(this@MainActivity) }
                 
                 AnimatedContent(
                     targetState = showSplash,
@@ -94,7 +99,14 @@ class MainActivity : ComponentActivity() {
                                 Screen.Login -> LoginScreen(
                                     onForgotPasswordClick = { currentScreen = Screen.ForgotPassword },
                                     onSignUpClick = { currentScreen = Screen.SignUp },
-                                    onLoginClick = { currentScreen = Screen.Main }
+                                    onLoginClick = { 
+                                        // Kiểm tra email admin
+                                        if (authManager.getSavedEmail() == "gm.giaphu@gmail.com") {
+                                            currentScreen = Screen.Admin
+                                        } else {
+                                            currentScreen = Screen.Main
+                                        }
+                                    }
                                 )
                                 Screen.ForgotPassword -> ForgotPasswordScreen(
                                     onBackToLogin = { currentScreen = Screen.Login },
@@ -137,6 +149,11 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = { currentScreen = Screen.SignUp },
                                     onVerifyOtp = { otp ->
                                         // Xác thực OTP thành công, chuyển về màn hình đăng nhập
+                                        currentScreen = Screen.Login
+                                    }
+                                )
+                                Screen.Admin -> AdminScreen(
+                                    onLogoutClick = {
                                         currentScreen = Screen.Login
                                     }
                                 )
@@ -286,7 +303,8 @@ enum class Screen {
     Cart,
     Payment,
     Coupon,
-    Booked
+    Booked,
+    Admin
 }
 
 @Composable
