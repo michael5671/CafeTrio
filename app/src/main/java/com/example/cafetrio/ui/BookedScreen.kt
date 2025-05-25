@@ -57,7 +57,8 @@ data class CollectionBanner(
 @Composable
 fun BookedScreen(
     onBackClick: () -> Unit = {},
-    onNavigationItemClick: (String) -> Unit = {}
+    onNavigationItemClick: (String) -> Unit = {},
+    onFavoritesClick: () -> Unit = {}
 ) {
     val backgroundColor = Color(0xFFF8F4E1)
     val scrollState = rememberScrollState()
@@ -174,7 +175,7 @@ fun BookedScreen(
                                     color = Color(0xFFFFFFFF), 
                                     shape = RoundedCornerShape(size = 20.dp)
                                 )
-                                .clickable { /* Handle favorites click */ },
+                                .clickable { onFavoritesClick() },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
@@ -380,9 +381,9 @@ fun BookedScreen(
                     .padding(horizontal = 16.dp)
             ) {
                 Column {
-                    Text(
+                Text(
                         text = "Bộ sưu tập",
-                        fontSize = 18.sp,
+                    fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF553311),
                         modifier = Modifier.padding(bottom = 8.dp)

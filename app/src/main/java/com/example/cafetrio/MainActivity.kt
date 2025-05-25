@@ -36,6 +36,8 @@ import com.example.cafetrio.ui.SignUpScreen
 import com.example.cafetrio.ui.SplashScreen
 import com.example.cafetrio.ui.theme.CafeTrioTheme
 import com.example.cafetrio.ui.UserInfScreen
+import com.example.cafetrio.ui.HistoryScreen
+import com.example.cafetrio.ui.WishListScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -229,6 +231,9 @@ class MainActivity : ComponentActivity() {
                                     onLogoutClick = {
                                         authManager.clearLoginCredentials()
                                         currentScreen = Screen.Login
+                                    },
+                                    onHistoryClick = {
+                                        currentScreen = Screen.History
                                     }
                                 )
                                 Screen.UserInfo -> UserInfScreen(
@@ -278,12 +283,21 @@ class MainActivity : ComponentActivity() {
                                     onNavigationItemClick = { destination ->
                                         when (destination) {
                                             "home" -> currentScreen = Screen.Main
-                                            "order" -> currentScreen = Screen.Booked // Navigate to itself (refresh)
+                                            "order" -> currentScreen = Screen.Booked
                                             "rewards" -> currentScreen = Screen.Coupon
                                             "differ" -> currentScreen = Screen.Differ
                                             else -> { /* Handle other navigation */ }
                                         }
+                                    },
+                                    onFavoritesClick = {
+                                        currentScreen = Screen.WishList
                                     }
+                                )
+                                Screen.History -> HistoryScreen(
+                                    onBackClick = { currentScreen = Screen.Differ }
+                                )
+                                Screen.WishList -> WishListScreen(
+                                    onBackClick = { currentScreen = Screen.Booked }
                                 )
                             }
                         }
@@ -310,7 +324,9 @@ enum class Screen {
     Coupon,
     Booked,
     Admin,
-    UserInfo
+    UserInfo,
+    History,
+    WishList
 }
 
 @Composable

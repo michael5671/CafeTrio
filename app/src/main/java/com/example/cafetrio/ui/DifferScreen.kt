@@ -27,7 +27,8 @@ import androidx.compose.foundation.verticalScroll
 fun DifferScreen(
     onBackClick: () -> Unit = {},
     onNavigationItemClick: (String) -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onHistoryClick: () -> Unit = {}
 ) {
     val backgroundColor = Color(0xFFF8F4E1)
     
@@ -237,7 +238,7 @@ fun DifferScreen(
                     title = "Lịch sử đơn hàng",
                     iconTint = Color(0xFFF9A825),
                     modifier = Modifier.weight(1f),
-                    onClick = { /* TODO */ }
+                    onClick = onHistoryClick
                 )
                 
                 Spacer(modifier = Modifier.width(12.dp))

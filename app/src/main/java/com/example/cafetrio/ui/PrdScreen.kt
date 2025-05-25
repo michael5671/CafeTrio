@@ -42,6 +42,8 @@ import com.example.cafetrio.data.CartManager
 import com.example.cafetrio.data.models.CartItem
 import com.example.cafetrio.utils.FormatUtils
 import java.util.UUID
+import com.example.cafetrio.data.WishlistManager
+import com.example.cafetrio.data.models.WishlistItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +66,8 @@ fun PrdScreen(
     )
     
     // State for wishlist button
-    var isInWishlist by remember { mutableStateOf(false) }
+    val wishlistManager = WishlistManager.getInstance()
+    var isInWishlist by remember { mutableStateOf(wishlistManager.isItemInWishlist(productId)) }
     
     // State for size selection (default to Vừa)
     var selectedSize by remember { mutableStateOf("Vừa") }
@@ -197,6 +200,7 @@ fun PrdScreen(
                         )
                     }
                 },
+                actions = { },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = backgroundColor
                 )
@@ -261,7 +265,21 @@ fun PrdScreen(
                     )
                     
                     IconButton(
-                        onClick = { isInWishlist = !isInWishlist },
+                        onClick = {
+                            if (isInWishlist) {
+                                wishlistManager.removeItem(productId)
+                            } else {
+                                wishlistManager.addItem(
+                                    WishlistItem(
+                                        id = productId,
+                                        name = product.name,
+                                        price = product.price,
+                                        imageRes = product.image
+                                    )
+                                )
+                            }
+                            isInWishlist = !isInWishlist
+                        }
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_love),
