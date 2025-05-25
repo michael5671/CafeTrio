@@ -35,6 +35,7 @@ import com.example.cafetrio.ui.PrdScreen
 import com.example.cafetrio.ui.SignUpScreen
 import com.example.cafetrio.ui.SplashScreen
 import com.example.cafetrio.ui.theme.CafeTrioTheme
+import com.example.cafetrio.ui.UserInfScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
                 var productId by remember { mutableStateOf("") }
-                var selectedOrder by remember { mutableStateOf<Order?>(null) }
+                var selectedOrder: Order? by remember { mutableStateOf(null) }
                 
                 // Get AuthManager instance
                 val authManager = remember { AuthManager.getInstance(this@MainActivity) }
@@ -215,19 +216,23 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                                 Screen.Differ -> DifferScreen(
-                                    onNavigationItemClick = { destination ->
-                                        when (destination) {
+                                    onBackClick = { currentScreen = Screen.Main },
+                                    onNavigationItemClick = { route ->
+                                        when (route) {
                                             "home" -> currentScreen = Screen.Main
                                             "order" -> currentScreen = Screen.Booked
                                             "rewards" -> currentScreen = Screen.Coupon
-                                            "differ" -> currentScreen = Screen.Differ // Navigate to itself (refresh)
-                                            else -> { /* Handle other navigation */ }
+                                            "user_info" -> currentScreen = Screen.UserInfo
+                                            else -> currentScreen = Screen.Differ
                                         }
                                     },
                                     onLogoutClick = {
-                                        // Navigate back to Login screen when logging out
+                                        authManager.clearLoginCredentials()
                                         currentScreen = Screen.Login
                                     }
+                                )
+                                Screen.UserInfo -> UserInfScreen(
+                                    onBackClick = { currentScreen = Screen.Differ }
                                 )
                                 Screen.Cart -> CartScreen(
                                     onBackClick = { currentScreen = Screen.Main },
@@ -304,7 +309,8 @@ enum class Screen {
     Payment,
     Coupon,
     Booked,
-    Admin
+    Admin,
+    UserInfo
 }
 
 @Composable

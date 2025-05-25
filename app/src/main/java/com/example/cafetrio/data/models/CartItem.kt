@@ -9,13 +9,4 @@ data class CartItem(
     val toppings: List<String>,
     val note: String = "",
     val timestamp: Long = System.currentTimeMillis()
-)
-
-data class Order(
-    val id: Int,
-    val customerName: String,
-    val phoneNumber: String,
-    val items: List<CartItem>,
-    val orderDate: Long = System.currentTimeMillis(),
-    val totalAmount: Int
 ) 

@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cafetrio.R
 import com.example.cafetrio.ui.theme.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -211,6 +213,7 @@ fun DifferScreen(
                 .padding(paddingValues)
                 .background(backgroundColor)
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Tiện ích Section
             Text(
@@ -310,7 +313,7 @@ fun DifferScreen(
             SupportItem(
                 iconResId = R.drawable.ic_ttcanhan,
                 title = "Thông tin cá nhân",
-                onClick = { /* TODO */ }
+                onClick = { onNavigationItemClick("user_info") }
             )
             
             Spacer(modifier = Modifier.height(1.dp))
