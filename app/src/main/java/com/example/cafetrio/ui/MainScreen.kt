@@ -51,7 +51,8 @@ import androidx.compose.animation.core.tween
 fun MainScreen(
     onNotificationClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    onNavigateToNoti: () -> Unit = {}
 ) {
     val userName = "NGUYEN DINH TUAN"
     val userCode = "CFT02809"
@@ -137,7 +138,7 @@ fun MainScreen(
                                     color = Color(0xFFFFFFFF), 
                                     shape = RoundedCornerShape(size = 45.dp)
                                 )
-                                .clickable { /* TODO: Handle notification click */ },
+                                .clickable { onNavigateToNoti() },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
@@ -175,8 +176,16 @@ fun MainScreen(
                         )
                         Text(
                             text = "Trang chủ",
-                            color = Color(0xFFAF8F6F),
+                            color = Color(0xFF543310),
                             fontSize = 12.sp
+                        )
+                        // Active indicator
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .width(32.dp)
+                                .height(2.dp)
+                                .background(Color(0xFF543310))
                         )
                     }
                     

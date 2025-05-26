@@ -42,7 +42,8 @@ fun PaymentScreen(
     order: Order,
     onBackClick: () -> Unit = {},
     onPlaceOrderClick: () -> Unit = {},
-    onNavigateToMain: () -> Unit = {}
+    onNavigateToMain: () -> Unit = {},
+    onSelectVoucher: () -> Unit = {}
 ) {
     val backgroundColor = CafeBeige
     val scrollState = rememberScrollState()
@@ -231,11 +232,10 @@ fun PaymentScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             // Cost summary
-            CostSummarySection(order.totalAmount)
-            
-            // Promotion section is now part of CostSummarySection
-            
-            Spacer(modifier = Modifier.height(8.dp))
+            CostSummarySection(
+                total = order.totalAmount,
+                onSelectVoucher = onSelectVoucher
+            )
             
             // Payment method
             PaymentMethodSection(
@@ -518,7 +518,7 @@ fun ProductsSection(order: Order) {
 }
 
 @Composable
-fun CostSummarySection(total: Int) {
+fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -585,7 +585,7 @@ fun CostSummarySection(total: Int) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {  }
+                .clickable { onSelectVoucher() }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically

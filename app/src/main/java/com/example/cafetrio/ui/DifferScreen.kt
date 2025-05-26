@@ -28,7 +28,8 @@ fun DifferScreen(
     onBackClick: () -> Unit = {},
     onNavigationItemClick: (String) -> Unit = {},
     onLogoutClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {}
+    onHistoryClick: () -> Unit = {},
+    onNavigateToNoti: () -> Unit = {}
 ) {
     val backgroundColor = Color(0xFFF8F4E1)
     
@@ -96,7 +97,7 @@ fun DifferScreen(
                                     color = Color(0xFFFFFFFF), 
                                     shape = RoundedCornerShape(size = 45.dp)
                                 )
-                                .clickable { /* TODO: Handle notification click */ },
+                                .clickable { onNavigateToNoti() },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(

@@ -38,6 +38,8 @@ import com.example.cafetrio.ui.theme.CafeTrioTheme
 import com.example.cafetrio.ui.UserInfScreen
 import com.example.cafetrio.ui.HistoryScreen
 import com.example.cafetrio.ui.WishListScreen
+import com.example.cafetrio.ui.NotiScreen
+import com.example.cafetrio.ui.SelectVoucherScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -48,6 +50,7 @@ class MainActivity : ComponentActivity() {
             CafeTrioTheme {
                 var showSplash by remember { mutableStateOf(true) }
                 var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
+                var previousScreen by remember { mutableStateOf<Screen>(Screen.Login) }
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
                 var productId by remember { mutableStateOf("") }
@@ -175,6 +178,10 @@ class MainActivity : ComponentActivity() {
                                             }
                                             else -> { /* Handle other navigation */ }
                                         }
+                                    },
+                                    onNavigateToNoti = {
+                                        previousScreen = Screen.Main
+                                        currentScreen = Screen.Noti
                                     }
                                 )
                                 Screen.ProductDetail -> {
@@ -219,8 +226,8 @@ class MainActivity : ComponentActivity() {
                                 }
                                 Screen.Differ -> DifferScreen(
                                     onBackClick = { currentScreen = Screen.Main },
-                                    onNavigationItemClick = { route ->
-                                        when (route) {
+                                    onNavigationItemClick = { destination ->
+                                        when (destination) {
                                             "home" -> currentScreen = Screen.Main
                                             "order" -> currentScreen = Screen.Booked
                                             "rewards" -> currentScreen = Screen.Coupon
@@ -234,6 +241,10 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onHistoryClick = {
                                         currentScreen = Screen.History
+                                    },
+                                    onNavigateToNoti = {
+                                        previousScreen = Screen.Differ
+                                        currentScreen = Screen.Noti
                                     }
                                 )
                                 Screen.UserInfo -> UserInfScreen(
@@ -257,6 +268,9 @@ class MainActivity : ComponentActivity() {
                                             onNavigateToMain = {
                                                 // Navigate to main screen when the success dialog is dismissed
                                                 currentScreen = Screen.Main
+                                            },
+                                            onSelectVoucher = {
+                                                currentScreen = Screen.SelectVoucher
                                             }
                                         )
                                     } ?: run {
@@ -264,6 +278,13 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = Screen.Cart
                                     }
                                 }
+                                Screen.SelectVoucher -> SelectVoucherScreen(
+                                    onBackClick = { currentScreen = Screen.Payment },
+                                    onVoucherSelect = { voucher ->
+                                        // Handle voucher selection
+                                        currentScreen = Screen.Payment
+                                    }
+                                )
                                 Screen.Coupon -> {
                                     CouponScreen(
                                         onBackClick = { currentScreen = Screen.Main },
@@ -299,6 +320,9 @@ class MainActivity : ComponentActivity() {
                                 Screen.WishList -> WishListScreen(
                                     onBackClick = { currentScreen = Screen.Booked }
                                 )
+                                Screen.Noti -> NotiScreen(
+                                    onBackClick = { currentScreen = previousScreen }
+                                )
                             }
                         }
                     }
@@ -326,7 +350,9 @@ enum class Screen {
     Admin,
     UserInfo,
     History,
-    WishList
+    WishList,
+    Noti,
+    SelectVoucher
 }
 
 @Composable
