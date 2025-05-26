@@ -232,10 +232,11 @@ fun PaymentScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             // Cost summary
-            CostSummarySection(
-                total = order.totalAmount,
-                onSelectVoucher = onSelectVoucher
-            )
+            CostSummarySection(order.totalAmount)
+            
+            // Promotion section is now part of CostSummarySection
+            
+            Spacer(modifier = Modifier.height(8.dp))
             
             // Payment method
             PaymentMethodSection(
@@ -244,6 +245,27 @@ fun PaymentScreen(
                     showPaymentMethodDialog = true
                 }
             )
+            
+            // Voucher selection button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onSelectVoucher)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Chọn khuyến mãi/đổi bean",
+                    fontSize = 16.sp,
+                    color = Color(0xFF543310)
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = "Select voucher",
+                    tint = Color.Gray
+                )
+            }
             
             // Place order button
             Box(
@@ -518,7 +540,7 @@ fun ProductsSection(order: Order) {
 }
 
 @Composable
-fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit = {}) {
+fun CostSummarySection(total: Int) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -585,7 +607,7 @@ fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit = {}) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onSelectVoucher() }
+                .clickable {  }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically

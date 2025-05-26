@@ -375,7 +375,7 @@ fun MainScreen(
                                         shape = RoundedCornerShape(15.dp)
                                     )
                                     .padding(horizontal = 8.dp)
-                                    .clickable { /* TODO: Handle bean exchange */ }
+                                    .clickable { onNavigate("rewards") }
                                     .align(Alignment.CenterVertically),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -425,7 +425,7 @@ fun MainScreen(
                         FunctionButton(
                             icon = R.drawable.shipping,
                             text = "Giao hàng",
-                            onClick = { onNavigate("delivery") },
+                            onClick = { onNavigate("order") },
                             modifier = Modifier
                                 .width(58.dp)
                                 .height(71.dp)
@@ -435,7 +435,7 @@ fun MainScreen(
                         FunctionButton(
                             icon = R.drawable.take_away,
                             text = "Mang đi",
-                            onClick = { onNavigate("takeaway") },
+                            onClick = { onNavigate("order") },
                             modifier = Modifier
                                 .width(58.dp)
                                 .height(71.dp)
@@ -457,7 +457,7 @@ fun MainScreen(
                         FunctionButton(
                             icon = R.drawable.coffee_beans,
                             text = "Đổi Bean",
-                            onClick = { onNavigate("redeem") },
+                            onClick = { onNavigate("rewards") },
                             modifier = Modifier
                                 .width(58.dp)
                                 .height(71.dp)

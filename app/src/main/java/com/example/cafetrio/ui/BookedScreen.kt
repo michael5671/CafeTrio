@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,12 +28,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.cafetrio.R
 import com.example.cafetrio.ui.theme.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 
 data class CategoryItem(
     val id: String,
@@ -60,24 +66,158 @@ fun BookedScreen(
     onNavigationItemClick: (String) -> Unit = {},
     onFavoritesClick: () -> Unit = {}
 ) {
-    val backgroundColor = Color(0xFFF8F4E1)
-    val scrollState = rememberScrollState()
+    var showSearchDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showCategorySheet by remember { mutableStateOf(false) }
+    
+    // Bottom sheet state
+    val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+    
+    // Categories
+    val categories = remember {
+        listOf(
+            CategoryItem("mon_moi", "Món Mới\nPhải Thử", R.drawable.mon_moi_phai_thu),
+            CategoryItem("cloud_tea", "Trà Sữa -\nCloudTea", R.drawable.cloud_tea),
+            CategoryItem("cloud_fee", "Cà Phê -\nCloudFee", R.drawable.cloud_fee),
+            CategoryItem("mon_nong", "Món Nóng", R.drawable.hot_fee),
+            CategoryItem("hi_tea", "Trà Trái Cây\n- HiTea", R.drawable.hi_tea),
+            CategoryItem("take_away", "Cà Phê -\nTrà Đóng Gói", R.drawable.take_away_fee)
+        )
+    }
     
     // Refs to sections for scrolling
     val sectionRefs = remember {
         mutableMapOf<String, MutableState<Int>>()
     }
     
-    // Categories
-    val categories = listOf(
-        CategoryItem("mon_moi", "Món Mới\nPhải Thử", R.drawable.mon_moi_phai_thu),
-        CategoryItem("cloud_tea", "Trà Sữa -\nCloudTea", R.drawable.cloud_tea),
-        CategoryItem("cloud_fee", "Cà Phê -\nCloudFee", R.drawable.cloud_fee),
-        CategoryItem("mon_nong", "Món Nóng", R.drawable.hot_fee),
-        CategoryItem("hi_tea", "Trà Trái Cây\n- HiTea", R.drawable.hi_tea),
-        CategoryItem("take_away", "Cà Phê -\nTrà Đóng Gói", R.drawable.take_away_fee)
-    )
+    // Initialize section refs
+    categories.forEach { category ->
+        sectionRefs[category.id] = remember { mutableStateOf(0) }
+    }
+    
+    if (showSearchDialog) {
+        SearchDialog(
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            onDismiss = { 
+                showSearchDialog = false
+                searchQuery = "" // Reset search query when dialog is dismissed
+            }
+        )
+    }
+
+    // Category Bottom Sheet
+    if (showCategorySheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showCategorySheet = false },
+            sheetState = sheetState,
+            containerColor = Color(0xFFF8F1DF),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                // Header with title and close button
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF8F1DF))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Danh mục sản phẩm",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF553311),
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                    
+                    IconButton(
+                        onClick = { 
+                            coroutineScope.launch { 
+                                sheetState.hide()
+                                showCategorySheet = false 
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Đóng",
+                            tint = Color(0xFF553311)
+                        )
+                    }
+                }
+
+                // Categories grid
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    // First row - 3 items
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        categories.take(3).forEach { category ->
+                            CategorySheetItem(
+                                category = category,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        sheetState.hide()
+                                        showCategorySheet = false
+                                        // Scroll to the selected category
+                                        sectionRefs[category.id]?.value?.let { position ->
+                                            scrollState.animateScrollTo(
+                                                value = position,
+                                                animationSpec = tween(durationMillis = 1000)
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Second row - 3 items
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        categories.takeLast(3).forEach { category ->
+                            CategorySheetItem(
+                                category = category,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        sheetState.hide()
+                                        showCategorySheet = false
+                                        // Scroll to the selected category
+                                        sectionRefs[category.id]?.value?.let { position ->
+                                            scrollState.animateScrollTo(
+                                                value = position,
+                                                animationSpec = tween(durationMillis = 1000)
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    val backgroundColor = Color(0xFFF8F4E1)
     
     // Products for "Món Mới Phải Thử" section
     val newProducts = listOf(
@@ -98,11 +238,6 @@ fun BookedScreen(
         CollectionBanner("b3", R.drawable.bst_3)
     )
     
-    // Initialize section refs
-    categories.forEach { category ->
-        sectionRefs[category.id] = remember { mutableStateOf(0) }
-    }
-    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -110,7 +245,7 @@ fun BookedScreen(
                     // Danh mục with dropdown icon
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { /* Handle category dropdown */ }
+                        modifier = Modifier.clickable { showCategorySheet = true }
                     ) {
                         // Logo square dots
                         Image(
@@ -129,7 +264,7 @@ fun BookedScreen(
                         )
                         
                         Spacer(modifier = Modifier.width(4.dp))
-                        
+                         
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Dropdown",
@@ -151,7 +286,7 @@ fun BookedScreen(
                                     color = Color(0xFFFFFFFF), 
                                     shape = RoundedCornerShape(size = 20.dp)
                                 )
-                                .clickable { /* Handle search click */ },
+                                .clickable { showSearchDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
@@ -687,5 +822,211 @@ fun ProductItem(product: Product) {
                 color = Color(0xFF553311)
             )
         }
+    }
+}
+
+@Composable
+fun SearchDialog(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFF8F1DF)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Tìm kiếm",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF543310)
+                    )
+                    
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color(0xFF543310)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Search input field
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    placeholder = {
+                        Text(
+                            text = "Nhập từ khóa tìm kiếm...",
+                            color = Color.Gray
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_search),
+                            contentDescription = "Search",
+                            tint = Color(0xFF543310),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    trailingIcon = if (searchQuery.isNotEmpty()) {
+                        {
+                            IconButton(
+                                onClick = { onSearchQueryChange("") }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear search",
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
+                    } else null,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF543310),
+                        unfocusedBorderColor = Color.Gray,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Search suggestions or recent searches
+                Column {
+                    Text(
+                        text = "Tìm kiếm gần đây",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF543310),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    // Recent search items
+                    RecentSearchItem(
+                        text = "Cà phê sữa",
+                        onClick = {
+                            onSearchQueryChange("Cà phê sữa")
+                        }
+                    )
+                    RecentSearchItem(
+                        text = "Trà sữa",
+                        onClick = {
+                            onSearchQueryChange("Trà sữa")
+                        }
+                    )
+                    RecentSearchItem(
+                        text = "Smoothie",
+                        onClick = {
+                            onSearchQueryChange("Smoothie")
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentSearchItem(
+    text: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowDown,
+            contentDescription = "Recent search",
+            tint = Color.Gray,
+            modifier = Modifier.size(20.dp)
+        )
+        
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            color = Color(0xFF543310)
+        )
+    }
+}
+
+@Composable
+fun CategorySheetItem(
+    category: CategoryItem,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(100.dp)
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        // Category image
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White)
+                .padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = category.imageRes),
+                contentDescription = category.title,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Category name
+        Text(
+            text = category.title.replace("\n", " "),
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            color = Color(0xFF553311),
+            maxLines = 2,
+            lineHeight = 18.sp
+        )
     }
 } 
