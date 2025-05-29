@@ -17,7 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.cafetrio.data.AuthManager
 import com.example.cafetrio.data.models.Order
+import com.example.cafetrio.ui.AdminScreen
 import com.example.cafetrio.ui.BookedScreen
 import com.example.cafetrio.ui.CartScreen
 import com.example.cafetrio.ui.ChangePasswordScreen
@@ -33,6 +35,11 @@ import com.example.cafetrio.ui.PrdScreen
 import com.example.cafetrio.ui.SignUpScreen
 import com.example.cafetrio.ui.SplashScreen
 import com.example.cafetrio.ui.theme.CafeTrioTheme
+import com.example.cafetrio.ui.UserInfScreen
+import com.example.cafetrio.ui.HistoryScreen
+import com.example.cafetrio.ui.WishListScreen
+import com.example.cafetrio.ui.NotiScreen
+import com.example.cafetrio.ui.SelectVoucherScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -43,11 +50,15 @@ class MainActivity : ComponentActivity() {
             CafeTrioTheme {
                 var showSplash by remember { mutableStateOf(true) }
                 var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
+                var previousScreen by remember { mutableStateOf<Screen>(Screen.Login) }
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
                 var productId by remember { mutableStateOf("") }
-                var selectedOrder by remember { mutableStateOf<Order?>(null) }
-
+                var selectedOrder: Order? by remember { mutableStateOf(null) }
+                
+                // Get AuthManager instance
+                val authManager = remember { AuthManager.getInstance(this@MainActivity) }
+                
                 AnimatedContent(
                     targetState = showSplash,
                     transitionSpec = {
@@ -94,7 +105,14 @@ class MainActivity : ComponentActivity() {
                                 Screen.Login -> LoginScreen(
                                     onForgotPasswordClick = { currentScreen = Screen.ForgotPassword },
                                     onSignUpClick = { currentScreen = Screen.SignUp },
-                                    onLoginClick = { currentScreen = Screen.Main }
+                                    onLoginClick = { 
+                                        // Kiểm tra email admin
+                                        if (authManager.getSavedEmail() == "gm.giaphu@gmail.com") {
+                                            currentScreen = Screen.Admin
+                                        } else {
+                                            currentScreen = Screen.Main
+                                        }
+                                    }
                                 )
                                 Screen.ForgotPassword -> ForgotPasswordScreen(
                                     onBackToLogin = { currentScreen = Screen.Login },
@@ -140,6 +158,11 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = Screen.Login
                                     }
                                 )
+                                Screen.Admin -> AdminScreen(
+                                    onLogoutClick = {
+                                        currentScreen = Screen.Login
+                                    }
+                                )
                                 Screen.Main -> MainScreen(
                                     onNotificationClick = { /* TODO */ },
                                     onMenuClick = { /* TODO */ },
@@ -149,12 +172,16 @@ class MainActivity : ComponentActivity() {
                                             destination == "order" -> currentScreen = Screen.Booked
                                             destination == "orders" -> currentScreen = Screen.Cart
                                             destination == "rewards" -> currentScreen = Screen.Coupon
-                                            destination in listOf("xoai_granola", "phuc_bon_tu_granola", "oolong_tu_quy_vai", "oolong_kim_quat_tran_chau", "tra_sua_oolong_tu_quy_suong_sao") -> {
-                                                productId = destination
+                                            destination.startsWith("product/") -> {
+                                                productId = destination.removePrefix("product/")
                                                 currentScreen = Screen.ProductDetail
                                             }
                                             else -> { /* Handle other navigation */ }
                                         }
+                                    },
+                                    onNavigateToNoti = {
+                                        previousScreen = Screen.Main
+                                        currentScreen = Screen.Noti
                                     }
                                 )
                                 Screen.ProductDetail -> {
@@ -186,7 +213,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                         else -> Triple("Sản phẩm", "0đ", R.drawable.xoai_granola)
                                     }
-
+                                    
                                     PrdScreen(
                                         productId = productId,
                                         onBackClick = { currentScreen = Screen.Main },
@@ -198,23 +225,34 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                                 Screen.Differ -> DifferScreen(
+                                    onBackClick = { currentScreen = Screen.Main },
                                     onNavigationItemClick = { destination ->
                                         when (destination) {
                                             "home" -> currentScreen = Screen.Main
                                             "order" -> currentScreen = Screen.Booked
                                             "rewards" -> currentScreen = Screen.Coupon
-                                            "differ" -> currentScreen = Screen.Differ // Navigate to itself (refresh)
-                                            else -> { /* Handle other navigation */ }
+                                            "user_info" -> currentScreen = Screen.UserInfo
+                                            else -> currentScreen = Screen.Differ
                                         }
                                     },
                                     onLogoutClick = {
-                                        // Navigate back to Login screen when logging out
+                                        authManager.clearLoginCredentials()
                                         currentScreen = Screen.Login
+                                    },
+                                    onHistoryClick = {
+                                        currentScreen = Screen.History
+                                    },
+                                    onNavigateToNoti = {
+                                        previousScreen = Screen.Differ
+                                        currentScreen = Screen.Noti
                                     }
+                                )
+                                Screen.UserInfo -> UserInfScreen(
+                                    onBackClick = { currentScreen = Screen.Differ }
                                 )
                                 Screen.Cart -> CartScreen(
                                     onBackClick = { currentScreen = Screen.Main },
-                                    onOrderClick = { order ->
+                                    onOrderClick = { order -> 
                                         selectedOrder = order
                                         currentScreen = Screen.Payment
                                     }
@@ -230,6 +268,9 @@ class MainActivity : ComponentActivity() {
                                             onNavigateToMain = {
                                                 // Navigate to main screen when the success dialog is dismissed
                                                 currentScreen = Screen.Main
+                                            },
+                                            onSelectVoucher = {
+                                                currentScreen = Screen.SelectVoucher
                                             }
                                         )
                                     } ?: run {
@@ -237,6 +278,13 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = Screen.Cart
                                     }
                                 }
+                                Screen.SelectVoucher -> SelectVoucherScreen(
+                                    onBackClick = { currentScreen = Screen.Payment },
+                                    onVoucherSelect = { voucher ->
+                                        // Handle voucher selection
+                                        currentScreen = Screen.Payment
+                                    }
+                                )
                                 Screen.Coupon -> {
                                     CouponScreen(
                                         onBackClick = { currentScreen = Screen.Main },
@@ -256,12 +304,24 @@ class MainActivity : ComponentActivity() {
                                     onNavigationItemClick = { destination ->
                                         when (destination) {
                                             "home" -> currentScreen = Screen.Main
-                                            "order" -> currentScreen = Screen.Booked // Navigate to itself (refresh)
+                                            "order" -> currentScreen = Screen.Booked
                                             "rewards" -> currentScreen = Screen.Coupon
                                             "differ" -> currentScreen = Screen.Differ
                                             else -> { /* Handle other navigation */ }
                                         }
+                                    },
+                                    onFavoritesClick = {
+                                        currentScreen = Screen.WishList
                                     }
+                                )
+                                Screen.History -> HistoryScreen(
+                                    onBackClick = { currentScreen = Screen.Differ }
+                                )
+                                Screen.WishList -> WishListScreen(
+                                    onBackClick = { currentScreen = Screen.Booked }
+                                )
+                                Screen.Noti -> NotiScreen(
+                                    onBackClick = { currentScreen = previousScreen }
                                 )
                             }
                         }
@@ -286,7 +346,13 @@ enum class Screen {
     Cart,
     Payment,
     Coupon,
-    Booked
+    Booked,
+    Admin,
+    UserInfo,
+    History,
+    WishList,
+    Noti,
+    SelectVoucher
 }
 
 @Composable

@@ -62,4 +62,6 @@ dependencies {
 
 // Logging Interceptor (optional, để log request/response)
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("io.coil-kt:coil-compose:2.2.2")
+
 }

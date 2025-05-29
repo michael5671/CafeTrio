@@ -42,6 +42,16 @@ import com.example.cafetrio.data.CartManager
 import com.example.cafetrio.data.models.CartItem
 import com.example.cafetrio.utils.FormatUtils
 import java.util.UUID
+import com.example.cafetrio.data.WishlistManager
+import com.example.cafetrio.data.models.WishlistItem
+import com.example.cafetrio.data.api.ApiClient
+import com.example.cafetrio.data.dto.ProductDetailResponse
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import coil.compose.AsyncImage
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,56 +61,48 @@ fun PrdScreen(
     onViewCart: () -> Unit = {},
     onNavigateToMain: () -> Unit = {}
 ) {
-    // State for showing success dialog
     var showSuccessDialog by remember { mutableStateOf(false) }
-    
-    // Product data for Xoài Granola
-    val product = ProductData(
-        id = "xoai_granola",
-        name = "Smoothie Xoài Nhiệt Đới Granola",
-        price = "65.000đ",
-        image = R.drawable.xoai_granola,
-        description = "Hương vị trái cây tươi mát gọi gọn trong ly Smoothie Xoài Nhiệt Đới Granola. Xoài ngọt đậm quyện cùng sữa chua sánh mịn. Nhân đôi healthy với ngũ cốc Granola và topping hạt nổ sữa chua vui miệng."
-    )
-    
-    // State for wishlist button
-    var isInWishlist by remember { mutableStateOf(false) }
-    
-    // State for size selection (default to Vừa)
-    var selectedSize by remember { mutableStateOf("Vừa") }
-    
-    // State for toppings (multiple selection allowed, max 2)
-    val toppingOptions = listOf(
-        "Trái Vải", 
-        "Hạt Sen", 
-        "Thạch Cà Phê", 
-        "Trân châu trắng", 
-        "Đào Miếng"
-    )
-    val selectedToppings = remember { mutableStateListOf<String>() }
-    
-    // State for expandable description
-    var isDescriptionExpanded by remember { mutableStateOf(false) }
-    
-    // State for note text
-    var noteText by remember { mutableStateOf("") }
-    
-    // Calculate total price based on selections
-    val basePrice = if (selectedSize == "Vừa") 69000 else 65000
-    val toppingsAddition = selectedToppings.size * 10000
-    val totalPrice = basePrice + toppingsAddition
+    val context = LocalContext.current
+    var product by remember { mutableStateOf<com.example.cafetrio.data.dto.ProductDetail?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
 
-    val backgroundColor = Color(0xFFF8F1DF) // Beige color matching the image
-    
-    // Cart manager to add items
-    val cartManager = remember { CartManager.getInstance() }
-    
-    // Success Dialog
+    // Fetch product detail
+    LaunchedEffect(productId) {
+        isLoading = true
+        error = null
+        ApiClient.apiService.getProductDetail(productId).enqueue(object : Callback<ProductDetailResponse> {
+            override fun onResponse(
+                call: Call<ProductDetailResponse>,
+                response: Response<ProductDetailResponse>
+            ) {
+                if (response.isSuccessful && response.body()?.data != null) {
+                    product = response.body()!!.data
+                    isLoading = false
+                } else {
+                    error = "Không tìm thấy sản phẩm"
+                    isLoading = false
+                }
+            }
+            override fun onFailure(call: Call<ProductDetailResponse>, t: Throwable) {
+                error = "Lỗi kết nối"
+                isLoading = false
+            }
+        })
+    }
+
+    // State for wishlist button
+    val wishlistManager = remember { com.example.cafetrio.data.WishlistManager.getInstance() }
+    var isInWishlist by remember { mutableStateOf(wishlistManager.isItemInWishlist(productId)) }
+    var isDescriptionExpanded by remember { mutableStateOf(false) }
+    val backgroundColor = Color(0xFFF8F1DF)
+    val cartManager = remember { com.example.cafetrio.data.CartManager.getInstance() }
+
     if (showSuccessDialog) {
         Dialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showSuccessDialog = false
-                onNavigateToMain() // Navigate to MainScreen when dialog is dismissed
+                onNavigateToMain()
             },
             properties = DialogProperties(
                 dismissOnBackPress = true,
@@ -118,7 +120,6 @@ fun PrdScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Close button
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -131,14 +132,12 @@ fun PrdScreen(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .size(24.dp)
-                                .clickable { 
+                                .clickable {
                                     showSuccessDialog = false
-                                    onNavigateToMain() // Navigate to MainScreen when close button is clicked
+                                    onNavigateToMain()
                                 }
                         )
                     }
-                    
-                    // Dialog content
                     Text(
                         text = "Thông báo",
                         fontSize = 24.sp,
@@ -147,7 +146,6 @@ fun PrdScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
                     Text(
                         text = "Chọn sản phẩm thành công!",
                         fontSize = 18.sp,
@@ -155,7 +153,6 @@ fun PrdScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    
                     Text(
                         text = buildAnnotatedString {
                             append("Kiểm tra đơn hàng của bạn tại ")
@@ -173,7 +170,7 @@ fun PrdScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
-                            .clickable { 
+                            .clickable {
                                 showSuccessDialog = false
                                 onViewCart()
                             }
@@ -187,7 +184,7 @@ fun PrdScreen(
         containerColor = backgroundColor,
         topBar = {
             TopAppBar(
-                title = { }, // Empty title
+                title = { },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -197,317 +194,202 @@ fun PrdScreen(
                         )
                     }
                 },
+                actions = { },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = backgroundColor
                 )
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(backgroundColor)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Product image
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(250.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = product.image),
-                    contentDescription = product.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                
-                // Banner "NEW" ở góc trên bên trái
-                Box(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .align(Alignment.TopStart)
-                        .background(Color(0xFFFF3333), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "NEW",
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-            
-            // Product info
+        } else if (error != null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(error ?: "Lỗi")
+            }
+        } else if (product != null) {
+            val priceString = "${product!!.price}đ"
+            val description = product!!.description
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(backgroundColor)
+                    .verticalScroll(rememberScrollState())
             ) {
-                // Product name with wishlist button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Product image
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
                 ) {
-                    Text(
-                        text = product.name,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF5D4037),
-                        modifier = Modifier.weight(1f)
+                    AsyncImage(
+                        model = product!!.imageUrl,
+                        contentDescription = product!!.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
-                    
-                    IconButton(
-                        onClick = { isInWishlist = !isInWishlist },
+                    Box(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .align(Alignment.TopStart)
+                            .background(Color(0xFFFF3333), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_love),
-                            contentDescription = "Yêu thích",
-                            tint = if (isInWishlist) Color.Red else Color.Gray,
-                            modifier = Modifier.size(28.dp)
+                        Text(
+                            text = "NEW",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
-                
-                // Product price
-                Text(
-                    text = product.price,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF5D4037)
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Product description
-                Text(
-                    text = product.description,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                    color = Color(0xFF5D4037)
-                )
-                
-                // Rút gọn (shown only when expanded, but we keep it simple here)
-                if (isDescriptionExpanded) {
-                    Text(
-                        text = "Rút gọn",
-                        fontSize = 14.sp,
-                        color = Color(0xFF8D6E63),
-                        modifier = Modifier.clickable { isDescriptionExpanded = false }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Size selection with required marker
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                // Product info
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = product!!.name,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF5D4037),
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = {
+                                if (isInWishlist) {
+                                    wishlistManager.removeItem(productId)
+                                } else {
+                                    wishlistManager.addItem(
+                                        com.example.cafetrio.data.models.WishlistItem(
+                                            id = productId,
+                                            name = product!!.name,
+                                            price = priceString,
+                                            imageRes = 0 // Không có resource nội bộ, chỉ có url
+                                        )
+                                    )
+                                }
+                                isInWishlist = !isInWishlist
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = com.example.cafetrio.R.drawable.ic_love),
+                                contentDescription = "Yêu thích",
+                                tint = if (isInWishlist) Color.Red else Color.Gray,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
                     Text(
-                        text = "Size",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
+                        text = priceString,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
                         color = Color(0xFF5D4037)
                     )
-                    
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "*",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.Red
+                        text = description,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xFF5D4037)
                     )
-                }
-                
-                // Chọn 1 loại size
-                Text(
-                    text = "Chọn 1 loại size",
-                    fontSize = 14.sp,
-                    color = Color(0xFF8D6E63),
-                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-                )
-                
-                // Size options
-                SizeOption(
-                    size = "Vừa",
-                    price = "69.000đ",
-                    isSelected = selectedSize == "Vừa",
-                    onSelect = { selectedSize = "Vừa" }
-                )
-                
-                SizeOption(
-                    size = "Nhỏ",
-                    price = "65.000đ",
-                    isSelected = selectedSize == "Nhỏ",
-                    onSelect = { selectedSize = "Nhỏ" }
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Toppings selection
-                Text(
-                    text = "Topping",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color(0xFF5D4037)
-                )
-                
-                // Chọn tối đa 2 loại
-                Text(
-                    text = "Chọn tối đa 2 loại",
-                    fontSize = 14.sp,
-                    color = Color(0xFF8D6E63),
-                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-                )
-                
-                // Topping options
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    toppingOptions.forEach { topping ->
-                        ToppingOption(
-                            name = topping,
-                            price = "10.000đ",
-                            isSelected = selectedToppings.contains(topping),
-                            onToggle = {
-                                if (selectedToppings.contains(topping)) {
-                                    selectedToppings.remove(topping)
-                                } else if (selectedToppings.size < 2) {
-                                    selectedToppings.add(topping)
-                                }
-                            }
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Yêu cầu khác
-                Text(
-                    text = "Yêu cầu khác",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color(0xFF5D4037)
-                )
-                
-                // Những tùy chọn khác
-                Text(
-                    text = "Những tùy chọn khác",
-                    fontSize = 14.sp,
-                    color = Color(0xFF8D6E63),
-                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-                )
-                
-                // Note input
-                OutlinedTextField(
-                    value = noteText,
-                    onValueChange = { noteText = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp),
-                    placeholder = { Text("Thêm ghi chú") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFBDBDBD),
-                        unfocusedBorderColor = Color(0xFFBDBDBD),
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Quantity selector and add to cart button
-                var quantity by remember { mutableStateOf(1) }
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Minus button
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF9E8D9))
-                            .clickable {
-                                if (quantity > 1) quantity--
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
+                    if (isDescriptionExpanded) {
                         Text(
-                            text = "−",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF5D4037)
+                            text = "Rút gọn",
+                            fontSize = 14.sp,
+                            color = Color(0xFF8D6E63),
+                            modifier = Modifier.clickable { isDescriptionExpanded = false }
                         )
                     }
-                    
-                    // Quantity display
-                    Text(
-                        text = quantity.toString(),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF5D4037),
+                    Spacer(modifier = Modifier.height(16.dp))
+                    var quantity by remember { mutableStateOf(1) }
+                    Row(
                         modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .width(30.dp),
-                        textAlign = TextAlign.Center
-                    )
-                    
-                    // Plus button
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF9E8D9))
-                            .clickable { quantity++ },
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "+",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF5D4037)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.width(16.dp))
-                    
-                    // Price button
-                    Button(
-                        onClick = { 
-                            // Add to cart with selected options
-                            val cartItem = CartItem(
-                                id = UUID.randomUUID().toString(),
-                                productName = product.name,
-                                size = selectedSize,
-                                quantity = quantity,
-                                price = totalPrice,
-                                toppings = selectedToppings.toList(),
-                                note = noteText
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF9E8D9))
+                                .clickable {
+                                    if (quantity > 1) quantity--
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "−",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF5D4037)
                             )
-                            cartManager.addToCart(cartItem)
-                            showSuccessDialog = true
-                        },
-                        modifier = Modifier
-                            .height(56.dp)
-                            .weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF5D4037)
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
+                        }
                         Text(
-                            text = FormatUtils.formatPrice(totalPrice * quantity),
-                            fontSize = 20.sp,
+                            text = quantity.toString(),
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color(0xFF5D4037),
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .width(30.dp),
+                            textAlign = TextAlign.Center
                         )
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF9E8D9))
+                                .clickable { quantity++ },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "+",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF5D4037)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Button(
+                            onClick = {
+                                val cartItem = com.example.cafetrio.data.models.CartItem(
+                                    id = java.util.UUID.randomUUID().toString(),
+                                    productName = product!!.name,
+                                    size = "",
+                                    quantity = quantity,
+                                    price = product!!.price,
+                                    toppings = emptyList(),
+                                    note = ""
+                                )
+                                cartManager.addToCart(cartItem)
+                                showSuccessDialog = true
+                            },
+                            modifier = Modifier
+                                .height(56.dp)
+                                .weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF5D4037)
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = "Thêm vào giỏ hàng",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }

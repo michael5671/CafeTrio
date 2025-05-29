@@ -20,7 +20,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -224,39 +223,51 @@ fun LoginScreen(
                 onClick = { 
                     if (email.isNotEmpty() && password.isNotEmpty()) {
                         isLoading = true
-                        val loginRequest = LoginRequest(
-                            email = email,
-                            password = password,
-                            rememberMe = rememberMe
-                        )
                         
-                        ApiClient.apiService.login(loginRequest).enqueue(object : Callback<LoginResponse> {
-                            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                                isLoading = false
-                                if (response.isSuccessful) {
-                                    val loginResponse = response.body()
-                                    if (loginResponse != null) {
-                                        // Lưu thông tin đăng nhập nếu chọn "Ghi nhớ tôi"
-                                        authManager.saveLoginCredentials(email, password, rememberMe)
-                                        
-                                        Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                                        onLoginClick()
-                                    }
-                                } else {
-                                    val errorMsg = when(response.code()) {
-                                        401 -> "Email hoặc mật khẩu không đúng"
-                                        404 -> "Tài khoản không tồn tại"
-                                        else -> "Đăng nhập thất bại: ${response.code()}"
-                                    }
-                                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                                }
-                            }
+                        // Kiểm tra admin (đơn giản)
+                        if (email == "gm.giaphu@gmail.com" && password == "admin") {
+                            // Lưu thông tin đăng nhập nếu chọn "Ghi nhớ tôi"
+                            authManager.saveLoginCredentials(email, password, rememberMe)
                             
-                            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                                isLoading = false
-                                Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        })
+                            Toast.makeText(context, "Đăng nhập quản trị thành công!", Toast.LENGTH_SHORT).show()
+                            onLoginClick()
+                            isLoading = false
+                        } else {
+                            // Xử lý đăng nhập thông thường
+                            val loginRequest = LoginRequest(
+                                email = email,
+                                password = password,
+                                rememberMe = rememberMe
+                            )
+                            
+                            ApiClient.apiService.login(loginRequest).enqueue(object : Callback<LoginResponse> {
+                                override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                                    isLoading = false
+                                    if (response.isSuccessful) {
+                                        val loginResponse = response.body()
+                                        if (loginResponse != null) {
+                                            // Lưu thông tin đăng nhập nếu chọn "Ghi nhớ tôi"
+                                            authManager.saveLoginCredentials(email, password, rememberMe)
+                                            
+                                            Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                            onLoginClick()
+                                        }
+                                    } else {
+                                        val errorMsg = when(response.code()) {
+                                            401 -> "Email hoặc mật khẩu không đúng"
+                                            404 -> "Tài khoản không tồn tại"
+                                            else -> "Đăng nhập thất bại: ${response.code()}"
+                                        }
+                                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                
+                                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                                    isLoading = false
+                                    Toast.makeText(context, "Lỗi kết nối: ${t.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            })
+                        }
                     } else {
                         Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
                     }

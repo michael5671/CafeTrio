@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.cafetrio.R
 import com.example.cafetrio.data.models.Order
+import com.example.cafetrio.data.models.CartItem
 import com.example.cafetrio.ui.theme.CafeBeige
 import com.example.cafetrio.ui.theme.CafeBrown
 import com.example.cafetrio.ui.theme.CafeTrioTheme
@@ -42,7 +43,8 @@ fun PaymentScreen(
     order: Order,
     onBackClick: () -> Unit = {},
     onPlaceOrderClick: () -> Unit = {},
-    onNavigateToMain: () -> Unit = {}
+    onNavigateToMain: () -> Unit = {},
+    onSelectVoucher: () -> Unit = {}
 ) {
     val backgroundColor = CafeBeige
     val scrollState = rememberScrollState()
@@ -163,13 +165,13 @@ fun PaymentScreen(
                     
                     Spacer(modifier = Modifier.height(12.dp))
                     
-                    // MoMo option
+                    // VNPAY option
                     PaymentOptionItem(
-                        name = "MoMo",
-                        icon = R.drawable.ic_momo,
-                        isSelected = selectedPaymentMethod == "MoMo",
+                        name = "VNPAY",
+                        icon = R.drawable.ic_vnpay,
+                        isSelected = selectedPaymentMethod == "VNPAY",
                         onSelect = { 
-                            selectedPaymentMethod = "MoMo"
+                            selectedPaymentMethod = "VNPAY"
                             scope.launch { 
                                 sheetState.hide()
                                 showPaymentMethodDialog = false 
@@ -231,7 +233,7 @@ fun PaymentScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             // Cost summary
-            CostSummarySection(order.totalAmount)
+            CostSummarySection(order.totalAmount, onSelectVoucher)
             
             // Promotion section is now part of CostSummarySection
             
@@ -518,7 +520,7 @@ fun ProductsSection(order: Order) {
 }
 
 @Composable
-fun CostSummarySection(total: Int) {
+fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -585,7 +587,7 @@ fun CostSummarySection(total: Int) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {  }
+                .clickable(onClick = onSelectVoucher)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -666,7 +668,7 @@ fun PaymentMethodSection(
                 val icon = if (selectedMethod == "Tiền mặt") {
                     R.drawable.ic_cash
                 } else {
-                    R.drawable.ic_momo
+                    R.drawable.ic_vnpay
                 }
                 
                 Image(

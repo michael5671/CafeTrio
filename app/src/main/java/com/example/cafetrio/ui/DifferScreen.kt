@@ -27,13 +27,17 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import com.example.cafetrio.ui.theme.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DifferScreen(
     onBackClick: () -> Unit = {},
     onNavigationItemClick: (String) -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onHistoryClick: () -> Unit = {},
+    onNavigateToNoti: () -> Unit = {}
 ) {
     val backgroundColor = Color(0xFFF8F4E1)
     val context = LocalContext.current
@@ -139,7 +143,7 @@ fun DifferScreen(
                                     color = Color(0xFFFFFFFF), 
                                     shape = RoundedCornerShape(size = 45.dp)
                                 )
-                                .clickable { /* TODO: Handle notification click */ },
+                                .clickable { onNavigateToNoti() },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
@@ -257,6 +261,7 @@ fun DifferScreen(
                 .padding(paddingValues)
                 .background(backgroundColor)
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Tiện ích Section
             Text(
@@ -280,7 +285,7 @@ fun DifferScreen(
                     title = "Lịch sử đơn hàng",
                     iconTint = Color(0xFFF9A825),
                     modifier = Modifier.weight(1f),
-                    onClick = { /* TODO */ }
+                    onClick = onHistoryClick
                 )
                 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -356,7 +361,7 @@ fun DifferScreen(
             SupportItem(
                 iconResId = R.drawable.ic_ttcanhan,
                 title = "Thông tin cá nhân",
-                onClick = { /* TODO */ }
+                onClick = { onNavigationItemClick("user_info") }
             )
             
             Spacer(modifier = Modifier.height(1.dp))

@@ -120,7 +120,7 @@ fun CartScreen(
                 
                 Text(
                     text = "Vui lòng chọn thêm sản phẩm vào đơn hàng của bạn",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     color = CafeBrown,
                     textAlign = TextAlign.Center
                 )

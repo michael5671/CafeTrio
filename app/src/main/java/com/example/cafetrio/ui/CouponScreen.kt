@@ -311,7 +311,7 @@ fun CouponScreen(
                     
                     FunctionButton(
                         icon = R.drawable.ic_gift,
-                        title = "Hạng thành viên",
+                        title = "Đổi BEAN",
                         onClick = { /* TODO: Handle function click */ },
                         iconColor = Color(0xFFFF5722), // Red-orange
                         modifier = Modifier.weight(1f)
@@ -327,7 +327,7 @@ fun CouponScreen(
                 ) {
                     FunctionButton(
                         icon = R.drawable.ic_coffeeseed,
-                        title = "Hạng thành viên",
+                        title = "Lịch sử BEAN",
                         onClick = { /* TODO: Handle function click */ },
                         iconColor = Color(0xFFAF8F6F), // Brown
                         modifier = Modifier.weight(1f)
@@ -335,7 +335,7 @@ fun CouponScreen(
                     
                     FunctionButton(
                         icon = R.drawable.ic_person,
-                        title = "Hạng thành viên",
+                        title = "Quyền lợi của bạn",
                         onClick = { /* TODO: Handle function click */ },
                         iconColor = Color(0xFF2196F3), // Blue
                         modifier = Modifier.weight(1f)

@@ -1,5 +1,6 @@
 package com.example.cafetrio.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,18 +46,50 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import com.example.cafetrio.data.api.ApiClient
+import com.example.cafetrio.data.dto.ProductResponse
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     onNotificationClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    onNavigateToNoti: () -> Unit = {}
 ) {
+
     val userName = "NGUYEN DINH TUAN"
     val userCode = "CFT02809"
     val beanCount = 88
-    
+
+    val mustTryProducts = remember { mutableStateListOf<ProductResponse>() }
+    val context = LocalContext.current
+
+    LaunchedEffect(true) {
+        ApiClient.apiService.getMustTryProducts().enqueue(object : Callback<List<ProductResponse>> {
+            override fun onResponse(
+                call: Call<List<ProductResponse>>,
+                response: Response<List<ProductResponse>>
+            ) {
+                response.body()?.let {
+                    mustTryProducts.clear()
+                    mustTryProducts.addAll(it)
+                }
+            }
+
+            override fun onFailure(call: Call<List<ProductResponse>>, t: Throwable) {
+                Toast.makeText(context, "Failed to load products", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
     val adImages = listOf(
         R.drawable.ad_1,
         R.drawable.ad_2,
@@ -137,7 +170,7 @@ fun MainScreen(
                                     color = Color(0xFFFFFFFF), 
                                     shape = RoundedCornerShape(size = 45.dp)
                                 )
-                                .clickable { /* TODO: Handle notification click */ },
+                                .clickable { onNavigateToNoti() },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
@@ -175,8 +208,16 @@ fun MainScreen(
                         )
                         Text(
                             text = "Trang chủ",
-                            color = Color(0xFFAF8F6F),
+                            color = Color(0xFF543310),
                             fontSize = 12.sp
+                        )
+                        // Active indicator
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .width(32.dp)
+                                .height(2.dp)
+                                .background(Color(0xFF543310))
                         )
                     }
                     
@@ -366,7 +407,7 @@ fun MainScreen(
                                         shape = RoundedCornerShape(15.dp)
                                     )
                                     .padding(horizontal = 8.dp)
-                                    .clickable { /* TODO: Handle bean exchange */ }
+                                    .clickable { onNavigate("rewards") }
                                     .align(Alignment.CenterVertically),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -416,7 +457,7 @@ fun MainScreen(
                         FunctionButton(
                             icon = R.drawable.shipping,
                             text = "Giao hàng",
-                            onClick = { onNavigate("delivery") },
+                            onClick = { onNavigate("order") },
                             modifier = Modifier
                                 .width(58.dp)
                                 .height(71.dp)
@@ -426,7 +467,7 @@ fun MainScreen(
                         FunctionButton(
                             icon = R.drawable.take_away,
                             text = "Mang đi",
-                            onClick = { onNavigate("takeaway") },
+                            onClick = { onNavigate("order") },
                             modifier = Modifier
                                 .width(58.dp)
                                 .height(71.dp)
@@ -448,7 +489,7 @@ fun MainScreen(
                         FunctionButton(
                             icon = R.drawable.coffee_beans,
                             text = "Đổi Bean",
-                            onClick = { onNavigate("redeem") },
+                            onClick = { onNavigate("rewards") },
                             modifier = Modifier
                                 .width(58.dp)
                                 .height(71.dp)
@@ -570,95 +611,44 @@ fun MainScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
+
                 // Grid layout cho các sản phẩm (2 sản phẩm mỗi hàng)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Smoothie Xoài Nhiệt Đới Granola
-                    ProductItem(
-                        image = R.drawable.xoai_granola,
-                        name = "Smoothie Xoài Nhiệt Đới Granola",
-                        price = "65.000đ",
-                        isNew = true,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate("xoai_granola") }
-                    )
-                    
-                    Spacer(modifier = Modifier.width(12.dp))
-                    
-                    // Smoothie Phúc Bồn Tử Granola
-                    ProductItem(
-                        image = R.drawable.phuc_bon_tu_granola,
-                        name = "Smoothie Phúc Bồn Tử Granola",
-                        price = "65.000đ",
-                        isNew = true,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate("phuc_bon_tu_granola") }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Hàng thứ 2 với 2 sản phẩm
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Oolong Tứ Quý Vải
-                    ProductItem(
-                        image = R.drawable.oolong_tu_quy_vai,
-                        name = "Oolong Tứ Quý Vải",
-                        price = "59.000đ",
-                        isNew = true,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate("oolong_tu_quy_vai") }
-                    )
-                    
-                    Spacer(modifier = Modifier.width(12.dp))
-                    
-                    // Oolong Tứ Quý Kim Quất Trân Châu
-                    ProductItem(
-                        image = R.drawable.oolong_kim_quat_tran_chau,
-                        name = "Oolong Tứ Quý Kim Quất Trân Châu",
-                        price = "59.000đ",
-                        isNew = true,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate("oolong_kim_quat_tran_chau") }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Hàng thứ 3 với 1 sản phẩm và 1 chỗ trống
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    // Trà Sữa Oolong Tứ Quý Sương Sáo
-                    ProductItem(
-                        image = R.drawable.tra_sua_oolong_tu_quy_suong_sao,
-                        name = "Trà Sữa Oolong Tứ Quý Sương Sáo",
-                        price = "55.000đ",
-                        isNew = true,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigate("tra_sua_oolong_tu_quy_suong_sao") }
-                    )
-                    
-                    Spacer(modifier = Modifier.width(12.dp))
-                    
-                    // Placeholder để giữ layout cân đối
-                    Box(modifier = Modifier.weight(1f))
+                val productChunks = mustTryProducts.chunked(2) // Từng cặp 2 sản phẩm
+
+                productChunks.forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        rowItems.forEach { product ->
+                            ProductItem(
+                                imageUrl = product.imageUrl,
+                                name = product.name,
+                                price = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).format(product.price),
+                                isNew = true,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigate("product/${product.id}") }
+                            )
+                        }
+
+                        // Nếu chỉ có 1 sản phẩm thì thêm Box trống để giữ layout
+                        if (rowItems.size == 1) {
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Box(modifier = Modifier.weight(1f))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
+
         }
     }
 }
 
 @Composable
 fun ProductItem(
-    image: Int,
+    imageUrl: String,
     name: String,
     price: String,
     isNew: Boolean = false,
@@ -666,10 +656,8 @@ fun ProductItem(
     onClick: () -> Unit = {}
 ) {
     Column(
-        modifier = modifier
-            .clickable { onClick() }
+        modifier = modifier.clickable { onClick() }
     ) {
-        // Hình ảnh sản phẩm với badge "NEW" nếu cần
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -677,16 +665,15 @@ fun ProductItem(
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
         ) {
-            Image(
-                painter = painterResource(id = image),
+            AsyncImage(
+                model = imageUrl,
                 contentDescription = name,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(4.dp),
-                contentScale = ContentScale.Crop
+                    .padding(4.dp)
             )
-            
-            // Badge "NEW" ở góc trên bên trái
+
             if (isNew) {
                 Box(
                     modifier = Modifier
@@ -704,10 +691,9 @@ fun ProductItem(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
-        // Tên sản phẩm
+
         Text(
             text = name,
             color = Color(0xFF543310),
@@ -716,10 +702,9 @@ fun ProductItem(
             maxLines = 2,
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         Spacer(modifier = Modifier.height(4.dp))
-        
-        // Giá và nút thêm
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -731,13 +716,12 @@ fun ProductItem(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
-            
-            // Nút thêm sản phẩm
+
             Box(
                 modifier = Modifier
                     .size(36.dp)
                     .background(Color(0xFF74512D), CircleShape)
-                    .clickable { /* TODO: Handle add product */ },
+                    .clickable { /* Add to cart */ },
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -749,7 +733,6 @@ fun ProductItem(
         }
     }
 }
-
 @Composable
 fun FunctionButton(
     icon: Int,
