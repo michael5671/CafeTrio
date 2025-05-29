@@ -11,8 +11,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
@@ -43,12 +45,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -188,7 +184,7 @@ fun MainScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { /* TODO: Navigate to Order */ }
+                            .clickable { onNavigate("order") }
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_booked),
@@ -206,7 +202,7 @@ fun MainScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { /* TODO: Navigate to Rewards */ }
+                            .clickable { onNavigate("rewards") }
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_voucher),
@@ -241,11 +237,13 @@ fun MainScreen(
             }
         }
     ) { paddingValues ->
+        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(Color(0xFFF8F4E1))
+                .verticalScroll(scrollState)
         ) {
             // User Profile Card - Redesigned with gradients
             Card(
@@ -548,6 +546,205 @@ fun MainScreen(
                         )
                     }
                 }
+            }
+            
+            // Separator
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = Color(0xFFD9D9D9),
+                thickness = 1.dp
+            )
+            
+            // Phần "Món Mới Phải Thử"
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                // Tiêu đề "Món Mới Phải Thử"
+                Text(
+                    text = "Món Mới Phải Thử",
+                    color = Color(0xFF543310),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                // Grid layout cho các sản phẩm (2 sản phẩm mỗi hàng)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Smoothie Xoài Nhiệt Đới Granola
+                    ProductItem(
+                        image = R.drawable.xoai_granola,
+                        name = "Smoothie Xoài Nhiệt Đới Granola",
+                        price = "65.000đ",
+                        isNew = true,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate("xoai_granola") }
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    // Smoothie Phúc Bồn Tử Granola
+                    ProductItem(
+                        image = R.drawable.phuc_bon_tu_granola,
+                        name = "Smoothie Phúc Bồn Tử Granola",
+                        price = "65.000đ",
+                        isNew = true,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate("phuc_bon_tu_granola") }
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Hàng thứ 2 với 2 sản phẩm
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Oolong Tứ Quý Vải
+                    ProductItem(
+                        image = R.drawable.oolong_tu_quy_vai,
+                        name = "Oolong Tứ Quý Vải",
+                        price = "59.000đ",
+                        isNew = true,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate("oolong_tu_quy_vai") }
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    // Oolong Tứ Quý Kim Quất Trân Châu
+                    ProductItem(
+                        image = R.drawable.oolong_kim_quat_tran_chau,
+                        name = "Oolong Tứ Quý Kim Quất Trân Châu",
+                        price = "59.000đ",
+                        isNew = true,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate("oolong_kim_quat_tran_chau") }
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Hàng thứ 3 với 1 sản phẩm và 1 chỗ trống
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    // Trà Sữa Oolong Tứ Quý Sương Sáo
+                    ProductItem(
+                        image = R.drawable.tra_sua_oolong_tu_quy_suong_sao,
+                        name = "Trà Sữa Oolong Tứ Quý Sương Sáo",
+                        price = "55.000đ",
+                        isNew = true,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onNavigate("tra_sua_oolong_tu_quy_suong_sao") }
+                    )
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    // Placeholder để giữ layout cân đối
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProductItem(
+    image: Int,
+    name: String,
+    price: String,
+    isNew: Boolean = false,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    Column(
+        modifier = modifier
+            .clickable { onClick() }
+    ) {
+        // Hình ảnh sản phẩm với badge "NEW" nếu cần
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White)
+        ) {
+            Image(
+                painter = painterResource(id = image),
+                contentDescription = name,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(4.dp),
+                contentScale = ContentScale.Crop
+            )
+            
+            // Badge "NEW" ở góc trên bên trái
+            if (isNew) {
+                Box(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopStart)
+                        .background(Color(0xFFFF3333), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "NEW",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Tên sản phẩm
+        Text(
+            text = name,
+            color = Color(0xFF543310),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        // Giá và nút thêm
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = price,
+                color = Color(0xFF543310),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            
+            // Nút thêm sản phẩm
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Color(0xFF74512D), CircleShape)
+                    .clickable { /* TODO: Handle add product */ },
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.button_plus),
+                    contentDescription = "Add to cart",
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

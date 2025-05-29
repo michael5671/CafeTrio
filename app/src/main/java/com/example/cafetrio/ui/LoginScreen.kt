@@ -20,17 +20,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cafetrio.R
+import com.example.cafetrio.data.AuthManager
 import com.example.cafetrio.data.api.ApiClient
 import com.example.cafetrio.data.dto.LoginRequest
 import com.example.cafetrio.data.dto.LoginResponse
-import android.content.Context
 import com.example.cafetrio.ui.theme.*
 import retrofit2.Call
 import retrofit2.Callback
@@ -43,13 +45,17 @@ fun LoginScreen(
     onSignUpClick: () -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    
     val context = LocalContext.current
-    
+    val authManager = remember { AuthManager.getInstance(context) }
+
+    // Lấy dữ liệu đã lưu
+    var email by remember { mutableStateOf(authManager.getSavedEmail()) }
+    var password by remember { mutableStateOf(authManager.getSavedPassword()) }
+    var rememberMe by remember { mutableStateOf(authManager.isRememberMeEnabled()) }
+
+    var passwordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -141,7 +147,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 placeholder = { Text("Nhập mật khẩu", color = CafeGrayText, fontSize = 18.sp) },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.LightGray,
                     unfocusedBorderColor = Color.LightGray,
@@ -149,7 +155,18 @@ fun LoginScreen(
                     unfocusedContainerColor = Color.White
                 ),
                 singleLine = true,
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(6.dp),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Image(
+                            painter = painterResource(
+                                id = if (passwordVisible) R.drawable.eye else R.drawable.close_eye
+                            ),
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             )
             
             // Dòng Ghi nhớ tôi và Quên mật khẩu
@@ -219,16 +236,8 @@ fun LoginScreen(
                                 if (response.isSuccessful) {
                                     val loginResponse = response.body()
                                     if (loginResponse != null) {
-                                        // Lưu token và thông tin người dùng vào SharedPreferences
-                                        val sharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-                                        val editor = sharedPreferences.edit()
-                                        
-                                        // Lưu thông tin đăng nhập
-                                        editor.putString("auth_token", loginResponse.token)
-                                        editor.putString("user_id", loginResponse.userId)
-                                        editor.putString("full_name", loginResponse.fullName)
-                                        editor.putString("email", loginResponse.email)
-                                        editor.apply()
+                                        // Lưu thông tin đăng nhập nếu chọn "Ghi nhớ tôi"
+                                        authManager.saveLoginCredentials(email, password, rememberMe)
                                         
                                         Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
                                         onLoginClick()

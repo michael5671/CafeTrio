@@ -16,16 +16,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import android.content.Context
+import com.example.cafetrio.data.models.Order
+import com.example.cafetrio.ui.BookedScreen
+import com.example.cafetrio.ui.CartScreen
 import com.example.cafetrio.ui.ChangePasswordScreen
+import com.example.cafetrio.ui.CouponScreen
 import com.example.cafetrio.ui.DifferScreen
 import com.example.cafetrio.ui.ForgotPasswordScreen
 import com.example.cafetrio.ui.LoginScreen
 import com.example.cafetrio.ui.MainScreen
 import com.example.cafetrio.ui.OTP_FGPassScreen
 import com.example.cafetrio.ui.OTP_SignUpScreen
+import com.example.cafetrio.ui.PaymentScreen
+import com.example.cafetrio.ui.PrdScreen
 import com.example.cafetrio.ui.SignUpScreen
 import com.example.cafetrio.ui.SplashScreen
 import com.example.cafetrio.ui.theme.CafeTrioTheme
@@ -38,14 +42,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             CafeTrioTheme {
                 var showSplash by remember { mutableStateOf(true) }
-                val context = LocalContext.current
-                val sharedPreferences = remember { context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE) }
-                var currentScreen by remember { 
-                    mutableStateOf<Screen>(if (sharedPreferences.getString("auth_token", null) != null) Screen.Main else Screen.Login) 
-                }
+                var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
-                
+                var productId by remember { mutableStateOf("") }
+                var selectedOrder by remember { mutableStateOf<Order?>(null) }
+
                 AnimatedContent(
                     targetState = showSplash,
                     transitionSpec = {
@@ -73,6 +75,11 @@ class MainActivity : ComponentActivity() {
                                     initialState == Screen.Login && targetState == Screen.Main -> {
                                         fadeIn(animationSpec = tween(800)) togetherWith
                                         fadeOut(animationSpec = tween(800))
+                                    }
+                                    // Faster transition for ProductDetail to Main
+                                    targetState == Screen.Main && initialState == Screen.ProductDetail -> {
+                                        fadeIn(animationSpec = tween(150)) togetherWith
+                                        fadeOut(animationSpec = tween(150))
                                     }
                                     // Default transition for other screens
                                     else -> {
@@ -137,22 +144,123 @@ class MainActivity : ComponentActivity() {
                                     onNotificationClick = { /* TODO */ },
                                     onMenuClick = { /* TODO */ },
                                     onNavigate = { destination ->
-                                        when (destination) {
-                                            "differ" -> currentScreen = Screen.Differ
+                                        when {
+                                            destination == "differ" -> currentScreen = Screen.Differ
+                                            destination == "order" -> currentScreen = Screen.Booked
+                                            destination == "orders" -> currentScreen = Screen.Cart
+                                            destination == "rewards" -> currentScreen = Screen.Coupon
+                                            destination in listOf("xoai_granola", "phuc_bon_tu_granola", "oolong_tu_quy_vai", "oolong_kim_quat_tran_chau", "tra_sua_oolong_tu_quy_suong_sao") -> {
+                                                productId = destination
+                                                currentScreen = Screen.ProductDetail
+                                            }
                                             else -> { /* Handle other navigation */ }
                                         }
                                     }
                                 )
+                                Screen.ProductDetail -> {
+                                    val productDetails = when (productId) {
+                                        "xoai_granola" -> Triple(
+                                            "Smoothie Xoài Nhiệt Đới Granola",
+                                            "65.000đ",
+                                            R.drawable.xoai_granola
+                                        )
+                                        "phuc_bon_tu_granola" -> Triple(
+                                            "Smoothie Phúc Bồn Tử Granola",
+                                            "65.000đ",
+                                            R.drawable.phuc_bon_tu_granola
+                                        )
+                                        "oolong_tu_quy_vai" -> Triple(
+                                            "Oolong Tứ Quý Vải",
+                                            "59.000đ",
+                                            R.drawable.oolong_tu_quy_vai
+                                        )
+                                        "oolong_kim_quat_tran_chau" -> Triple(
+                                            "Oolong Tứ Quý Kim Quất Trân Châu",
+                                            "59.000đ",
+                                            R.drawable.oolong_kim_quat_tran_chau
+                                        )
+                                        "tra_sua_oolong_tu_quy_suong_sao" -> Triple(
+                                            "Trà Sữa Oolong Tứ Quý Sương Sáo",
+                                            "55.000đ",
+                                            R.drawable.tra_sua_oolong_tu_quy_suong_sao
+                                        )
+                                        else -> Triple("Sản phẩm", "0đ", R.drawable.xoai_granola)
+                                    }
+
+                                    PrdScreen(
+                                        productId = productId,
+                                        onBackClick = { currentScreen = Screen.Main },
+                                        onViewCart = { currentScreen = Screen.Cart },
+                                        onNavigateToMain = {
+                                            // Navigate back to MainScreen when success dialog is dismissed
+                                            currentScreen = Screen.Main
+                                        }
+                                    )
+                                }
                                 Screen.Differ -> DifferScreen(
                                     onNavigationItemClick = { destination ->
                                         when (destination) {
                                             "home" -> currentScreen = Screen.Main
+                                            "order" -> currentScreen = Screen.Booked
+                                            "rewards" -> currentScreen = Screen.Coupon
+                                            "differ" -> currentScreen = Screen.Differ // Navigate to itself (refresh)
                                             else -> { /* Handle other navigation */ }
                                         }
                                     },
                                     onLogoutClick = {
                                         // Navigate back to Login screen when logging out
                                         currentScreen = Screen.Login
+                                    }
+                                )
+                                Screen.Cart -> CartScreen(
+                                    onBackClick = { currentScreen = Screen.Main },
+                                    onOrderClick = { order ->
+                                        selectedOrder = order
+                                        currentScreen = Screen.Payment
+                                    }
+                                )
+                                Screen.Payment -> {
+                                    selectedOrder?.let { order ->
+                                        PaymentScreen(
+                                            order = order,
+                                            onBackClick = { currentScreen = Screen.Cart },
+                                            onPlaceOrderClick = {
+                                                // This is no longer needed since we're handling navigation through onNavigateToMain
+                                            },
+                                            onNavigateToMain = {
+                                                // Navigate to main screen when the success dialog is dismissed
+                                                currentScreen = Screen.Main
+                                            }
+                                        )
+                                    } ?: run {
+                                        // Fallback if no order is selected
+                                        currentScreen = Screen.Cart
+                                    }
+                                }
+                                Screen.Coupon -> {
+                                    CouponScreen(
+                                        onBackClick = { currentScreen = Screen.Main },
+                                        onNavigationItemClick = { destination ->
+                                            when (destination) {
+                                                "home" -> currentScreen = Screen.Main
+                                                "order" -> currentScreen = Screen.Booked
+                                                "rewards" -> currentScreen = Screen.Coupon // Navigate to itself (refresh)
+                                                "differ" -> currentScreen = Screen.Differ
+                                                else -> { /* Handle other navigation */ }
+                                            }
+                                        }
+                                    )
+                                }
+                                Screen.Booked -> BookedScreen(
+                                    onBackClick = { currentScreen = Screen.Main },
+                                    onNavigationItemClick = { destination ->
+                                        when (destination) {
+                                            "home" -> currentScreen = Screen.Main
+                                            "order" -> currentScreen = Screen.Booked // Navigate to itself (refresh)
+                                            "rewards" -> currentScreen = Screen.Coupon
+                                            "differ" -> currentScreen = Screen.Differ
+                                            else -> { /* Handle other navigation */ }
+                                        }
                                     }
                                 )
                             }
@@ -173,7 +281,12 @@ enum class Screen {
     SignUp,
     OtpSignUp,
     Main,
-    Differ
+    Differ,
+    ProductDetail,
+    Cart,
+    Payment,
+    Coupon,
+    Booked
 }
 
 @Composable
