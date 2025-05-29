@@ -105,9 +105,9 @@ class MainActivity : ComponentActivity() {
                                 Screen.Login -> LoginScreen(
                                     onForgotPasswordClick = { currentScreen = Screen.ForgotPassword },
                                     onSignUpClick = { currentScreen = Screen.SignUp },
-                                    onLoginClick = { 
+                                    onLoginClick = { email -> 
                                         // Kiểm tra email admin
-                                        if (authManager.getSavedEmail() == "gm.giaphu@gmail.com") {
+                                        if (email == "gm.giaphu@gmail.com") {
                                             currentScreen = Screen.Admin
                                         } else {
                                             currentScreen = Screen.Main

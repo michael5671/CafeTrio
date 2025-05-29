@@ -296,7 +296,7 @@ fun MainScreen(
                             Text(
                                 text = userName,
                                 color = Color.White,
-                                fontSize = 16.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 modifier = Modifier

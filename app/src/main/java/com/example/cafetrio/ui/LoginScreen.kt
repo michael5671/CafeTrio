@@ -42,7 +42,7 @@ import retrofit2.Response
 fun LoginScreen(
     onForgotPasswordClick: () -> Unit = {},
     onSignUpClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {}
+    onLoginClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val authManager = remember { AuthManager.getInstance(context) }
@@ -230,7 +230,7 @@ fun LoginScreen(
                             authManager.saveLoginCredentials(email, password, rememberMe)
                             
                             Toast.makeText(context, "Đăng nhập quản trị thành công!", Toast.LENGTH_SHORT).show()
-                            onLoginClick()
+                            onLoginClick(email)
                             isLoading = false
                         } else {
                             // Xử lý đăng nhập thông thường
@@ -250,7 +250,7 @@ fun LoginScreen(
                                             authManager.saveLoginCredentials(email, password, rememberMe)
                                             
                                             Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                                            onLoginClick()
+                                            onLoginClick(email)
                                         }
                                     } else {
                                         val errorMsg = when(response.code()) {
