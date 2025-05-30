@@ -491,22 +491,33 @@ fun CategoryManagementContent(
     onEditCategory: (String, String) -> Unit,
     onDeleteCategory: (String) -> Unit
 ) {
-    // Danh sách danh mục mẫu
-    val categoryList = remember {
-        listOf(
-            Pair("cat1", "Cà phê"),
-            Pair("cat2", "Trà sữa"),
-            Pair("cat3", "Nước ép"),
-            Pair("cat4", "Sinh tố"),
-            Pair("cat5", "Đồ ăn nhẹ")
-        )
-    }
-    
+    // Danh sách danh mục động từ API
+    var categoryList by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+
     var showAddEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf<Pair<String, String>?>(null) }
     var isEditing by remember { mutableStateOf(false) }
-    
+
+    // Fetch categories từ API khi vào tab hoặc sau khi thêm/sửa/xóa
+    fun loadCategories() {
+        isLoading = true
+        errorMsg = null
+        com.example.cafetrio.data.repository.CategoryRepository.getCategories { list, err ->
+            isLoading = false
+            if (err != null) {
+                errorMsg = "Lỗi tải danh mục: ${err.message}"
+            } else {
+                categoryList = list?.map { it.id.toString() to it.name } ?: emptyList()
+            }
+        }
+    }
+    LaunchedEffect(Unit, showAddDialog) {
+        loadCategories()
+    }
+
     // Kích hoạt dialog thêm mới khi FAB được nhấn
     LaunchedEffect(showAddDialog) {
         if (showAddDialog) {
@@ -515,57 +526,74 @@ fun CategoryManagementContent(
             selectedCategory = null
         }
     }
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(categoryList) { category ->
-                CategoryItem(
-                    name = category.second,
-                    onEditClick = { 
-                        selectedCategory = category
-                        isEditing = true
-                        showAddEditDialog = true
-                    },
-                    onDeleteClick = { 
-                        selectedCategory = category
-                        showDeleteDialog = true
-                    }
-                )
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else if (errorMsg != null) {
+            Text(errorMsg!!, color = Color.Red)
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(categoryList) { category ->
+                    CategoryItem(
+                        name = category.second,
+                        onEditClick = {
+                            selectedCategory = category
+                            isEditing = true
+                            showAddEditDialog = true
+                        },
+                        onDeleteClick = {
+                            selectedCategory = category
+                            showDeleteDialog = true
+                        }
+                    )
+                }
+                // Thêm khoảng trống ở cuối để tránh FAB che mất item cuối
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
-            // Thêm khoảng trống ở cuối để tránh FAB che mất item cuối
-            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }
-    
+
     // Dialog thêm/sửa danh mục
     if (showAddEditDialog) {
         CategoryDialog(
             isEditing = isEditing,
             categoryName = selectedCategory?.second ?: "",
-            categoryDescription = "Mô tả danh mục",  // Giả sử mô tả mặc định
-            onDismiss = { 
-                showAddEditDialog = false 
+            categoryDescription = "",
+            onDismiss = {
+                showAddEditDialog = false
                 if (showAddDialog) onAddDialogDismiss()
             },
             onSave = { name, description ->
                 if (isEditing && selectedCategory != null) {
-                    onEditCategory(selectedCategory!!.first, name)
+                    // Gọi API cập nhật
+                    com.example.cafetrio.data.repository.CategoryRepository.updateCategory(
+                        selectedCategory!!.first ,
+                        com.example.cafetrio.data.dto.CategoryRequest(name, description)
+                    ) { _, err ->
+                        if (err == null) loadCategories()
+                    }
                 } else {
-                    // Xử lý thêm danh mục mới
+                    // Gọi API thêm mới
+                    com.example.cafetrio.data.repository.CategoryRepository.createCategory(
+                        com.example.cafetrio.data.dto.CategoryRequest(name, description)
+                    ) { _, err ->
+                        if (err == null) loadCategories()
+                    }
                 }
                 showAddEditDialog = false
                 if (showAddDialog) onAddDialogDismiss()
             }
         )
     }
-    
+
     // Dialog xác nhận xóa
     if (showDeleteDialog && selectedCategory != null) {
         DeleteConfirmationDialog(
@@ -573,7 +601,12 @@ fun CategoryManagementContent(
             itemName = selectedCategory?.second ?: "",
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
-                onDeleteCategory(selectedCategory!!.second)
+                // Gọi API xóa
+                com.example.cafetrio.data.repository.CategoryRepository.deleteCategory(
+                    selectedCategory!!.first
+                ) { success, _ ->
+                    if (success) loadCategories()
+                }
                 showDeleteDialog = false
             }
         )
