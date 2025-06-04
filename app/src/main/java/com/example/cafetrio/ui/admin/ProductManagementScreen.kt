@@ -387,6 +387,15 @@ fun ProductManagementContent(
     var selectedProductCategoryId by remember { mutableStateOf<Int?>(null) }
     var isFetchingProductDetail by remember { mutableStateOf(false) }
 
+    // Kích hoạt dialog thêm mới khi FAB (nút dấu cộng) được nhấn (showAddDialog = true)
+    LaunchedEffect(showAddDialog) {
+        if (showAddDialog) {
+            showAddEditDialog = true
+            selectedProduct = null
+            selectedProductCategoryId = null
+        }
+    }
+
     // Fetch products when screen is shown
     LaunchedEffect(Unit) {
         Toast.makeText(context, "ProductManagementContent mounted", Toast.LENGTH_SHORT).show()
@@ -641,9 +650,63 @@ fun ProductManagementContent(
                     })
                 } else {
                     // Thêm mới sản phẩm
-                    // TODO: Gọi API thêm mới nếu cần
-                    showAddEditDialog = false
-                    selectedProduct = null
+                    ApiClient.apiService.createProduct(req).enqueue(object : retrofit2.Callback<com.example.cafetrio.data.dto.ProductDetailResponse> {
+                        override fun onResponse(call: retrofit2.Call<com.example.cafetrio.data.dto.ProductDetailResponse>, response: retrofit2.Response<com.example.cafetrio.data.dto.ProductDetailResponse>) {
+                            if (response.isSuccessful) {
+                                Toast.makeText(context, "Thêm sản phẩm thành công!", Toast.LENGTH_SHORT).show();
+                                // Reload lại danh sách sản phẩm
+                                isLoadingProducts = true;
+                                productError = null;
+                                val params = org.json.JSONObject();
+                                val pageable = org.json.JSONObject();
+                                pageable.put("page", 0);
+                                pageable.put("size", 60);
+                                val sortArr = org.json.JSONArray();
+                                sortArr.put("name");
+                                pageable.put("sort", sortArr);
+                                ApiClient.apiService.getProducts(params.toString(), pageable.toString()).enqueue(object : retrofit2.Callback<ResponseBody> {
+                                    override fun onResponse(call: retrofit2.Call<ResponseBody>, response: retrofit2.Response<ResponseBody>) {
+                                        isLoadingProducts = false;
+                                        if (response.isSuccessful) {
+                                            try {
+                                                val body = response.body()?.string();
+                                                val json = org.json.JSONObject(body);
+                                                val dataObj = json.getJSONObject("data");
+                                                val itemsArr = dataObj.getJSONArray("items");
+                                                val list = mutableListOf<Map<String, Any>>();
+                                                for (i in 0 until itemsArr.length()) {
+                                                    val item = itemsArr.getJSONObject(i);
+                                                    val map = mutableMapOf<String, Any>();
+                                                    for (key in item.keys()) {
+                                                        map[key] = item.get(key);
+                                                    }
+                                                    list.add(map);
+                                                }
+                                                products = list;
+                                            } catch (e: Exception) {
+                                                productError = "Lỗi parse dữ liệu sản phẩm: ${e.message}";
+                                            }
+                                        } else {
+                                            productError = "Lỗi lấy sản phẩm: ${response.code()}";
+                                        }
+                                    }
+                                    override fun onFailure(call: retrofit2.Call<ResponseBody>, t: Throwable) {
+                                        isLoadingProducts = false;
+                                        productError = "Lỗi kết nối: ${t.localizedMessage}";
+                                    }
+                                });
+                            } else {
+                                Toast.makeText(context, "Lỗi khi thêm sản phẩm", Toast.LENGTH_SHORT).show();
+                            }
+                            showAddEditDialog = false;
+                            selectedProduct = null;
+                        }
+                        override fun onFailure(call: retrofit2.Call<com.example.cafetrio.data.dto.ProductDetailResponse>, t: Throwable) {
+                            Toast.makeText(context, "Lỗi kết nối khi thêm sản phẩm", Toast.LENGTH_SHORT).show();
+                            showAddEditDialog = false;
+                            selectedProduct = null;
+                        }
+                    });
                 }
             }
         )

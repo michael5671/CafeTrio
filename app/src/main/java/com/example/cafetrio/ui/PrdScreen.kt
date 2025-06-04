@@ -52,6 +52,10 @@ import retrofit2.Response
 import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
+import com.example.cafetrio.data.dto.CreateOrderRequest
+import com.example.cafetrio.data.dto.CreateOrderResponse
+import com.example.cafetrio.data.dto.OrderItemRequest
+import com.example.cafetrio.data.AuthManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +70,8 @@ fun PrdScreen(
     var product by remember { mutableStateOf<com.example.cafetrio.data.dto.ProductDetail?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    val authManager = remember { AuthManager.getInstance(context) }
+    var isCreatingOrder by remember { mutableStateOf(false) }
 
     // Fetch product detail
     LaunchedEffect(productId) {
@@ -363,17 +369,52 @@ fun PrdScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Button(
                             onClick = {
-                                val cartItem = com.example.cafetrio.data.models.CartItem(
-                                    id = java.util.UUID.randomUUID().toString(),
-                                    productName = product!!.name,
-                                    size = "",
-                                    quantity = quantity,
-                                    price = product!!.price,
-                                    toppings = emptyList(),
-                                    note = ""
-                                )
-                                cartManager.addToCart(cartItem)
-                                showSuccessDialog = true
+                                if (product != null && !isCreatingOrder) {
+                                    isCreatingOrder = true
+                                    val userId = "49adf380-a278-4c6b-aecd-7b6b29ff76cc"
+                                    val orderRequest = CreateOrderRequest(
+                                        fullName = authManager.getSavedFullName() ?: "Guest",
+                                        itemsPrice = product!!.price * quantity,
+                                        orderItems = listOf(
+                                            OrderItemRequest(
+                                                id = productId,
+                                                name = product!!.name,
+                                                price = product!!.price,
+                                                amount = quantity
+                                            )
+                                        ),
+                                        phone = authManager.getSavedPhone() ?: "",
+                                        totalPrice = product!!.price * quantity,
+                                        userId = userId
+                                    )
+
+                                    ApiClient.apiService.createOrder(orderRequest).enqueue(object : Callback<CreateOrderResponse> {
+                                        override fun onResponse(
+                                            call: Call<CreateOrderResponse>,
+                                            response: Response<CreateOrderResponse>
+                                        ) {
+                                            isCreatingOrder = false
+                                            if (response.isSuccessful) {
+                                                showSuccessDialog = true
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Không thể tạo đơn hàng. Vui lòng thử lại.",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+
+                                        override fun onFailure(call: Call<CreateOrderResponse>, t: Throwable) {
+                                            isCreatingOrder = false
+                                            Toast.makeText(
+                                                context,
+                                                "Lỗi kết nối. Vui lòng thử lại.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    })
+                                }
                             },
                             modifier = Modifier
                                 .height(56.dp)
@@ -381,14 +422,22 @@ fun PrdScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF5D4037)
                             ),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(16.dp),
+                            enabled = !isCreatingOrder
                         ) {
-                            Text(
-                                text = "Thêm vào giỏ hàng",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            if (isCreatingOrder) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Color.White
+                                )
+                            } else {
+                                Text(
+                                    text = "Thêm vào giỏ hàng",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }

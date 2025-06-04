@@ -12,6 +12,8 @@ import com.example.cafetrio.data.dto.ResendOtpRequest
 import com.example.cafetrio.data.dto.ResetPasswordRequest
 import com.example.cafetrio.data.dto.VerifyOtpRequest
 import com.example.cafetrio.data.dto.CategoryRequest
+import com.example.cafetrio.data.dto.CreateOrderRequest
+import com.example.cafetrio.data.dto.CreateOrderResponse
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.Body
@@ -88,4 +90,7 @@ interface ApiService {
 
     @DELETE("api/categories/{id}")
     fun deleteCategory(@Path("id") categoryId: String): Call<ResponseBody> // Assuming simple success/error response
+
+    @POST("api/order")
+    fun createOrder(@Body request: CreateOrderRequest): Call<CreateOrderResponse>
 }
