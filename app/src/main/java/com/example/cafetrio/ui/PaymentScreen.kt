@@ -1,5 +1,9 @@
 package com.example.cafetrio.ui
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
@@ -19,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,40 +33,48 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.cafetrio.R
-
-import com.example.cafetrio.data.models.Order
-import com.example.cafetrio.data.models.CartItem
+import com.example.cafetrio.data.api.ApiClient
+import com.example.cafetrio.data.dto.OrderDetail
+import com.example.cafetrio.data.dto.PaymentRequest
+import com.example.cafetrio.data.dto.PaymentResponse
 import com.example.cafetrio.ui.theme.CafeBeige
 import com.example.cafetrio.ui.theme.CafeBrown
 import com.example.cafetrio.ui.theme.CafeTrioTheme
 import com.example.cafetrio.utils.FormatUtils
 import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentScreen(
-    order: Order,
+    order: OrderDetail,
     onBackClick: () -> Unit = {},
-    onPlaceOrderClick: () -> Unit = {},
     onNavigateToMain: () -> Unit = {},
     onSelectVoucher: () -> Unit = {}
 ) {
     val backgroundColor = CafeBeige
     val scrollState = rememberScrollState()
-    
+    val context = LocalContext.current // Lấy context để mở URL
+
     // State for showing success dialog
     var showSuccessDialog by remember { mutableStateOf(false) }
-    
+
     // State for showing payment method selection
     var showPaymentMethodDialog by remember { mutableStateOf(false) }
-    
+
     // Selected payment method
     var selectedPaymentMethod by remember { mutableStateOf("Tiền mặt") }
-    
+
     // Bottom sheet state
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-    
+
+    // State for payment error or URL
+    var paymentError by remember { mutableStateOf<String?>(null) }
+    var paymentUrl by remember { mutableStateOf<String?>(null) }
+
     // Success Dialog
     if (showSuccessDialog) {
         OrderSuccessDialog(
@@ -72,7 +84,7 @@ fun PaymentScreen(
             }
         )
     }
-    
+
     // Payment Method Bottom Sheet
     if (showPaymentMethodDialog) {
         ModalBottomSheet(
@@ -84,9 +96,8 @@ fun PaymentScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp)  // Add extra padding at bottom for better UX
+                    .padding(bottom = 32.dp)
             ) {
-                // Header with title and close button
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -100,12 +111,11 @@ fun PaymentScreen(
                         color = Color(0xFF553311),
                         modifier = Modifier.align(Alignment.Center)
                     )
-                    
                     IconButton(
-                        onClick = { 
-                            scope.launch { 
+                        onClick = {
+                            scope.launch {
                                 sheetState.hide()
-                                showPaymentMethodDialog = false 
+                                showPaymentMethodDialog = false
                             }
                         },
                         modifier = Modifier
@@ -119,8 +129,7 @@ fun PaymentScreen(
                         )
                     }
                 }
-                
-                // Instruction text
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -135,8 +144,7 @@ fun PaymentScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-                
-                // Payment options section
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -149,33 +157,31 @@ fun PaymentScreen(
                         color = Color(0xFF553311),
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
-                    // Cash option
+
                     PaymentOptionItem(
                         name = "Tiền mặt",
                         icon = R.drawable.ic_cash,
                         isSelected = selectedPaymentMethod == "Tiền mặt",
-                        onSelect = { 
+                        onSelect = {
                             selectedPaymentMethod = "Tiền mặt"
-                            scope.launch { 
+                            scope.launch {
                                 sheetState.hide()
-                                showPaymentMethodDialog = false 
+                                showPaymentMethodDialog = false
                             }
                         }
                     )
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
-                    
-                    // VNPAY option
+
                     PaymentOptionItem(
                         name = "VNPAY",
                         icon = R.drawable.ic_vnpay,
                         isSelected = selectedPaymentMethod == "VNPAY",
-                        onSelect = { 
+                        onSelect = {
                             selectedPaymentMethod = "VNPAY"
-                            scope.launch { 
+                            scope.launch {
                                 sheetState.hide()
-                                showPaymentMethodDialog = false 
+                                showPaymentMethodDialog = false
                             }
                         }
                     )
@@ -183,7 +189,7 @@ fun PaymentScreen(
             }
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -223,32 +229,19 @@ fun PaymentScreen(
                 .padding(paddingValues)
                 .verticalScroll(scrollState)
         ) {
-            // Delivery option (now includes address information)
             DeliveryOption()
-            
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Product selected
             ProductsSection(order)
-            
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Cost summary
-            CostSummarySection(order.totalAmount, onSelectVoucher)
-            
-            // Promotion section is now part of CostSummarySection
-            
+            CostSummarySection(order.totalPrice, onSelectVoucher)
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Payment method
             PaymentMethodSection(
                 selectedMethod = selectedPaymentMethod,
                 onSelectPaymentMethod = {
                     showPaymentMethodDialog = true
                 }
             )
-            
-            // Place order button
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -256,9 +249,45 @@ fun PaymentScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Button(
-                    onClick = { 
-                        // Show success dialog instead of navigating immediately
-                        showSuccessDialog = true
+                    onClick = {
+                        scope.launch {
+                            paymentError = null
+                            paymentUrl = null
+                            try {
+                                val paymentRequest = PaymentRequest(
+                                    amount = order.totalPrice,
+                                    orderId = order.id,
+                                    language = "vn"
+                                )
+                                val call = ApiClient.apiService.payWithVnpay(paymentRequest)
+                                call.enqueue(object : Callback<PaymentResponse> {
+                                    override fun onResponse(call: Call<PaymentResponse>, response: Response<PaymentResponse>) {
+                                        if (response.isSuccessful) {
+                                            val paymentResponse = response.body()
+                                            if (paymentResponse?.code == "ok") {
+                                                paymentUrl = paymentResponse.paymentUrl
+                                                paymentUrl?.let { url ->
+                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                                    context.startActivity(intent)
+                                                }
+                                            } else {
+                                                paymentError = "Thanh toán thất bại: ${paymentResponse?.message}"
+                                            }
+                                        } else {
+                                            paymentError = "Thanh toán thất bại: ${response.message()}"
+                                        }
+                                    }
+
+                                    override fun onFailure(call: Call<PaymentResponse>, t: Throwable) {
+                                        paymentError = "Lỗi thanh toán: ${t.message}"
+                                        Log.e("PaymentScreen", "Payment Failure: ${t.message}", t)
+                                    }
+                                })
+                            } catch (e: Exception) {
+                                paymentError = "Lỗi khi gọi API: ${e.message}"
+                                Log.e("PaymentScreen", "Payment Error: ${e.message}", e)
+                            }
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -268,12 +297,21 @@ fun PaymentScreen(
                     ),
                     shape = RoundedCornerShape(4.dp)
                 ) {
-                    Text(
-                        text = "Đặt hàng",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Đặt hàng", color = Color.White, fontWeight = FontWeight.Bold)
                 }
+            }
+
+            paymentError?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .background(Color.LightGray, RoundedCornerShape(8.dp))
+                        .padding(8.dp)
+                )
             }
         }
     }
@@ -287,7 +325,6 @@ fun DeliveryOption() {
             .background(Color(0xFFF8F1DF))
             .padding(vertical = 8.dp)
     ) {
-        // Tiêu đề và nút "Thay đổi"
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -295,51 +332,28 @@ fun DeliveryOption() {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Giao hàng tận nơi",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF553311)
-            )
-            
+            Text("Giao hàng tận nơi", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF553311))
             Button(
                 onClick = { /* Xử lý khi nhấn Thay đổi */ },
-                modifier = Modifier
-                    .height(36.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF7D5A43)
-                ),
+                modifier = Modifier.height(36.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7D5A43)),
                 shape = RoundedCornerShape(50)
             ) {
-                Text(
-                    text = "Thay đổi",
-                    color = Color.White,
-                    fontSize = 14.sp
-                )
+                Text("Thay đổi", color = Color.White, fontSize = 14.sp)
             }
         }
 
-        // Thông tin địa chỉ giao hàng
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {  }
+                .clickable { }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "Nguyễn Đình Tuấn",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF553311)
-                )
-
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Nguyễn Đình Tuấn", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF553311))
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Text(
                     text = "Lô T2-1,2, Đường D1, Quận 9, Hồ Chí Minh, Việt Nam",
                     fontSize = 14.sp,
@@ -348,49 +362,28 @@ fun DeliveryOption() {
                     overflow = TextOverflow.Ellipsis
                 )
             }
-
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Chi tiết",
-                tint = Color.Gray
-            )
+            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "Chi tiết", tint = Color.Gray)
         }
-        
-        // Phần thời gian giao hàng
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {  }
+                .clickable { }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = "15 - 30 phút",
-                    fontSize = 15.sp,
-                    color = Color(0xFF553311)
-                )
-                
-                Text(
-                    text = "Càng sớm càng tốt",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF553311)
-                )
+                Text("15 - 30 phút", fontSize = 15.sp, color = Color(0xFF553311))
+                Text("Càng sớm càng tốt", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF553311))
             }
-            
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Chi tiết",
-                tint = Color.Gray
-            )
+            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "Chi tiết", tint = Color.Gray)
         }
     }
 }
 
 @Composable
-fun ProductsSection(order: Order) {
+fun ProductsSection(order: OrderDetail) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -401,54 +394,33 @@ fun ProductsSection(order: Order) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Sản phẩm đã chọn",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF553311)
-            )
-            
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Text("Sản phẩm đã chọn", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF553311))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "${order.items.size} món",
+                    text = "${order.orderItemList.size} món",
                     fontSize = 14.sp,
                     color = Color(0xFF7D5A43),
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(end = 8.dp)
                 )
-                
                 Button(
                     onClick = { /* Xử lý khi nhấn Thêm */ },
-                    modifier = Modifier
-                        .height(36.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7D5A43)
-                    ),
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7D5A43)),
                     shape = RoundedCornerShape(50)
                 ) {
-                    Text(
-                        text = "+ Thêm",
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
+                    Text("+ Thêm", color = Color.White, fontSize = 14.sp)
                 }
             }
         }
-        
         Spacer(modifier = Modifier.height(12.dp))
-        
-        // List of products
-        order.items.forEach { item ->
-            // Hiển thị sản phẩm với icon cafe
+        order.orderItemList.forEach { item ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Icon cafe
                 Image(
                     painter = painterResource(id = R.drawable.cup_of_cf),
                     contentDescription = "Coffee icon",
@@ -456,17 +428,13 @@ fun ProductsSection(order: Order) {
                         .size(24.dp)
                         .padding(end = 8.dp)
                 )
-                
-                // Product info
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "x${item.quantity} ${item.productName}",
+                            text = "x${item.amount} ${item.name}",
                             fontSize = 14.sp,
                             color = Color(0xFF553311),
                             fontWeight = FontWeight.Medium,
@@ -474,46 +442,14 @@ fun ProductsSection(order: Order) {
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        
                         Text(
-                            text = FormatUtils.formatPrice(item.price * item.quantity),
+                            text = FormatUtils.formatPrice(item.price?.times(item.amount) ?: 0),
                             fontSize = 14.sp,
                             color = Color(0xFF553311),
                             fontWeight = FontWeight.Medium
                         )
                     }
-                    
-                    // Size
-                    Text(
-                        text = "${item.size}",
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-                }
-            }
-            
-            // Show toppings if any
-            if (item.toppings.isNotEmpty() || item.note.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 32.dp, top = 4.dp, bottom = 8.dp)
-                ) {
-                    if (item.toppings.isNotEmpty()) {
-                        Text(
-                            text = "Topping: ${item.toppings.joinToString(", ")}",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
-                    
-                    if (item.note.isNotEmpty()) {
-                        Text(
-                            text = "Ghi chú: ${item.note}",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
+                    Text("Vừa", fontSize = 14.sp, color = Color.Gray)
                 }
             }
         }
@@ -527,16 +463,7 @@ fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit) {
             .fillMaxWidth()
             .background(Color(0xFFF8F1DF))
     ) {
-        // Header
-        Text(
-            text = "Tổng cộng",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF553311),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        )
-        
-        // Thành tiền
+        Text("Tổng cộng", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF553311), modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -544,23 +471,10 @@ fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Thành tiền",
-                fontSize = 16.sp,
-                color = Color(0xFF553311)
-            )
-            
-            Text(
-                text = FormatUtils.formatPrice(total),
-                fontSize = 16.sp,
-                color = Color(0xFF553311),
-                fontWeight = FontWeight.Medium
-            )
+            Text("Thành tiền", fontSize = 16.sp, color = Color(0xFF553311))
+            Text(FormatUtils.formatPrice(total), fontSize = 16.sp, color = Color(0xFF553311), fontWeight = FontWeight.Medium)
         }
-        
         Divider(color = Color.LightGray, thickness = 0.5.dp)
-        
-        // Phí giao hàng
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -568,23 +482,10 @@ fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Phí giao hàng",
-                fontSize = 16.sp,
-                color = Color(0xFF553311)
-            )
-            
-            Text(
-                text = FormatUtils.formatPrice(0),
-                fontSize = 16.sp,
-                color = Color(0xFF553311),
-                fontWeight = FontWeight.Medium
-            )
+            Text("Phí giao hàng", fontSize = 16.sp, color = Color(0xFF553311))
+            Text(FormatUtils.formatPrice(0), fontSize = 16.sp, color = Color(0xFF553311), fontWeight = FontWeight.Medium)
         }
-        
         Divider(color = Color.LightGray, thickness = 0.5.dp)
-        
-        // Chọn khuyến mãi/Đổi bean
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -593,22 +494,10 @@ fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Chọn khuyến mãi/đổi bean",
-                fontSize = 16.sp,
-                color = Color(0xFF3DA9FC)
-            )
-            
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Chi tiết",
-                tint = Color.Gray
-            )
+            Text("Chọn khuyến mãi/đổi bean", fontSize = 16.sp, color = Color(0xFF3DA9FC))
+            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "Chi tiết", tint = Color.Gray)
         }
-        
         Divider(color = Color.LightGray, thickness = 0.5.dp)
-        
-        // Số tiền thanh toán
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -616,19 +505,8 @@ fun CostSummarySection(total: Int, onSelectVoucher: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Số tiền thanh toán",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF553311)
-            )
-            
-            Text(
-                text = FormatUtils.formatPrice(total),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF553311)
-            )
+            Text("Số tiền thanh toán", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF553311))
+            Text(FormatUtils.formatPrice(total), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF553311))
         }
     }
 }
@@ -644,7 +522,6 @@ fun PaymentMethodSection(
             .background(Color(0xFFF8F1DF))
             .padding(vertical = 8.dp)
     ) {
-        // Section header
         Text(
             text = "Thanh toán",
             fontSize = 20.sp,
@@ -652,8 +529,6 @@ fun PaymentMethodSection(
             color = Color(0xFF553311),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        
-        // Payment method selection row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -662,16 +537,8 @@ fun PaymentMethodSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Payment icon
-                val icon = if (selectedMethod == "Tiền mặt") {
-                    R.drawable.ic_cash
-                } else {
-                    R.drawable.ic_vnpay
-                }
-                
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val icon = if (selectedMethod == "Tiền mặt") R.drawable.ic_cash else R.drawable.ic_vnpay
                 Image(
                     painter = painterResource(id = icon),
                     contentDescription = "Payment Method Icon",
@@ -679,20 +546,9 @@ fun PaymentMethodSection(
                         .size(28.dp)
                         .padding(end = 8.dp)
                 )
-                
-                Text(
-                    text = selectedMethod,
-                    fontSize = 16.sp,
-                    color = Color(0xFF553311),
-                    fontWeight = FontWeight.Medium
-                )
+                Text(selectedMethod, fontSize = 16.sp, color = Color(0xFF553311), fontWeight = FontWeight.Medium)
             }
-            
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Chi tiết",
-                tint = Color.Gray
-            )
+            Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "Chi tiết", tint = Color.Gray)
         }
     }
 }
@@ -711,7 +567,6 @@ fun PaymentOptionItem(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Radio button
         RadioButton(
             selected = isSelected,
             onClick = onSelect,
@@ -720,8 +575,6 @@ fun PaymentOptionItem(
                 unselectedColor = Color.Gray
             )
         )
-        
-        // Icon
         Image(
             painter = painterResource(id = icon),
             contentDescription = name,
@@ -729,14 +582,7 @@ fun PaymentOptionItem(
                 .size(36.dp)
                 .padding(horizontal = 8.dp)
         )
-        
-        // Method name
-        Text(
-            text = name,
-            fontSize = 16.sp,
-            color = Color(0xFF553311),
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-        )
+        Text(name, fontSize = 16.sp, color = Color(0xFF553311), fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
     }
 }
 
@@ -758,7 +604,6 @@ fun OrderSuccessDialog(
                 .background(Color(0xFFF8F1DF))
                 .padding(24.dp)
         ) {
-            // Close button
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
@@ -771,11 +616,10 @@ fun OrderSuccessDialog(
                     tint = Color(0xFF553311)
                 )
             }
-            
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp), // Leave space for the close button
+                    .padding(top = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -786,7 +630,6 @@ fun OrderSuccessDialog(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
                 Text(
                     text = "Đặt hàng thành công!",
                     fontSize = 18.sp,
@@ -795,7 +638,6 @@ fun OrderSuccessDialog(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
                 Text(
                     text = "Đơn hàng của bạn sẽ sớm được giao đến!",
                     fontSize = 16.sp,
@@ -806,35 +648,3 @@ fun OrderSuccessDialog(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun PaymentScreenPreview() {
-    CafeTrioTheme {
-        val previewOrder = Order(
-            id = 1,
-            customerName = "Nguyễn Đình Tuấn",
-            phoneNumber = "0981234567",
-            items = listOf(
-                com.example.cafetrio.data.models.CartItem(
-                    id = "1",
-                    productName = "Smoothie Xoài Nhiệt Đới Granola",
-                    size = "Vừa",
-                    quantity = 1,
-                    price = 65000,
-                    toppings = listOf("Trân châu trắng")
-                )
-            ),
-            totalAmount = 65000
-        )
-        PaymentScreen(order = previewOrder)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun OrderSuccessDialogPreview() {
-    CafeTrioTheme {
-        OrderSuccessDialog(onDismiss = {})
-    }
-} 

@@ -14,6 +14,9 @@ import com.example.cafetrio.data.dto.VerifyOtpRequest
 import com.example.cafetrio.data.dto.CategoryRequest
 import com.example.cafetrio.data.dto.CreateOrderRequest
 import com.example.cafetrio.data.dto.CreateOrderResponse
+import com.example.cafetrio.data.dto.OrderResponse
+import com.example.cafetrio.data.dto.PaymentRequest
+import com.example.cafetrio.data.dto.PaymentResponse
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.Body
@@ -93,4 +96,10 @@ interface ApiService {
 
     @POST("api/order")
     fun createOrder(@Body request: CreateOrderRequest): Call<CreateOrderResponse>
+
+    @GET("api/order/me")
+    fun getMyOrders(): Call<OrderResponse>
+
+    @POST("api/payment/vnpay")
+    fun payWithVnpay(@Body paymentRequest: PaymentRequest): Call<PaymentResponse>
 }

@@ -18,28 +18,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.cafetrio.data.AuthManager
-import com.example.cafetrio.data.models.Order
-import com.example.cafetrio.ui.AdminScreen
-import com.example.cafetrio.ui.BookedScreen
-import com.example.cafetrio.ui.CartScreen
-import com.example.cafetrio.ui.ChangePasswordScreen
-import com.example.cafetrio.ui.CouponScreen
-import com.example.cafetrio.ui.DifferScreen
-import com.example.cafetrio.ui.ForgotPasswordScreen
-import com.example.cafetrio.ui.LoginScreen
-import com.example.cafetrio.ui.MainScreen
-import com.example.cafetrio.ui.OTP_FGPassScreen
-import com.example.cafetrio.ui.OTP_SignUpScreen
-import com.example.cafetrio.ui.PaymentScreen
-import com.example.cafetrio.ui.PrdScreen
-import com.example.cafetrio.ui.SignUpScreen
-import com.example.cafetrio.ui.SplashScreen
+import com.example.cafetrio.data.dto.OrderDetail // Thay Order bằng OrderDetail
+import com.example.cafetrio.ui.*
 import com.example.cafetrio.ui.theme.CafeTrioTheme
-import com.example.cafetrio.ui.UserInfScreen
-import com.example.cafetrio.ui.HistoryScreen
-import com.example.cafetrio.ui.WishListScreen
-import com.example.cafetrio.ui.NotiScreen
-import com.example.cafetrio.ui.SelectVoucherScreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -54,16 +35,15 @@ class MainActivity : ComponentActivity() {
                 var emailForOtp by remember { mutableStateOf("") }
                 var otpToken by remember { mutableStateOf("") }
                 var productId by remember { mutableStateOf("") }
-                var selectedOrder: Order? by remember { mutableStateOf(null) }
-                
+                var selectedOrder: OrderDetail? by remember { mutableStateOf(null) }
                 // Get AuthManager instance
                 val authManager = remember { AuthManager.getInstance(this@MainActivity) }
-                
+
                 AnimatedContent(
                     targetState = showSplash,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(800)) togetherWith 
-                        fadeOut(animationSpec = tween(800))
+                        fadeIn(animationSpec = tween(800)) togetherWith
+                                fadeOut(animationSpec = tween(800))
                     },
                     label = "splash_transition"
                 ) { isSplashVisible ->
@@ -77,25 +57,25 @@ class MainActivity : ComponentActivity() {
                                 when {
                                     // Use a nicer fade + slide transition for Login to Main transition
                                     targetState == Screen.Main && initialState == Screen.Login -> {
-                                        (slideInHorizontally(animationSpec = tween(900)) { width -> width } + 
-                                        fadeIn(animationSpec = tween(900))) togetherWith
-                                        (slideOutHorizontally(animationSpec = tween(900)) { width -> -width } + 
-                                        fadeOut(animationSpec = tween(900)))
+                                        (slideInHorizontally(animationSpec = tween(900)) { width -> width } +
+                                                fadeIn(animationSpec = tween(900))) togetherWith
+                                                (slideOutHorizontally(animationSpec = tween(900)) { width -> -width } +
+                                                        fadeOut(animationSpec = tween(900)))
                                     }
                                     // Use the same transition for Splash to Login for consistency
                                     initialState == Screen.Login && targetState == Screen.Main -> {
                                         fadeIn(animationSpec = tween(800)) togetherWith
-                                        fadeOut(animationSpec = tween(800))
+                                                fadeOut(animationSpec = tween(800))
                                     }
                                     // Faster transition for ProductDetail to Main
                                     targetState == Screen.Main && initialState == Screen.ProductDetail -> {
                                         fadeIn(animationSpec = tween(150)) togetherWith
-                                        fadeOut(animationSpec = tween(150))
+                                                fadeOut(animationSpec = tween(150))
                                     }
                                     // Default transition for other screens
                                     else -> {
                                         fadeIn(animationSpec = tween(500)) togetherWith
-                                        fadeOut(animationSpec = tween(500))
+                                                fadeOut(animationSpec = tween(500))
                                     }
                                 }
                             },
@@ -105,8 +85,7 @@ class MainActivity : ComponentActivity() {
                                 Screen.Login -> LoginScreen(
                                     onForgotPasswordClick = { currentScreen = Screen.ForgotPassword },
                                     onSignUpClick = { currentScreen = Screen.SignUp },
-                                    onLoginClick = { 
-                                        // Kiểm tra email admin
+                                    onLoginClick = {
                                         if (authManager.getSavedEmail() == "gm.giaphu@gmail.com") {
                                             currentScreen = Screen.Admin
                                         } else {
@@ -125,7 +104,6 @@ class MainActivity : ComponentActivity() {
                                     emailAddress = emailForOtp,
                                     onBackClick = { currentScreen = Screen.ForgotPassword },
                                     onVerifyOtp = { otp ->
-                                        // Chuyển đến màn hình đổi mật khẩu sau khi xác thực OTP
                                         otpToken = otp
                                         currentScreen = Screen.ChangePassword
                                     }
@@ -134,14 +112,12 @@ class MainActivity : ComponentActivity() {
                                     email = emailForOtp,
                                     onBackClick = { currentScreen = Screen.OtpVerification },
                                     onChangePasswordSubmit = {
-                                        // Quay về màn hình đăng nhập sau khi đổi mật khẩu
                                         currentScreen = Screen.Login
                                     }
                                 )
                                 Screen.SignUp -> SignUpScreen(
                                     onBackClick = { currentScreen = Screen.Login },
                                     onSignUpSubmit = { email ->
-                                        // Chuyển đến màn hình xác thực OTP khi đăng ký
                                         emailForOtp = email
                                         currentScreen = Screen.OtpSignUp
                                     },
@@ -154,7 +130,6 @@ class MainActivity : ComponentActivity() {
                                     emailAddress = emailForOtp,
                                     onBackClick = { currentScreen = Screen.SignUp },
                                     onVerifyOtp = { otp ->
-                                        // Xác thực OTP thành công, chuyển về màn hình đăng nhập
                                         currentScreen = Screen.Login
                                     }
                                 )
@@ -213,13 +188,11 @@ class MainActivity : ComponentActivity() {
                                         )
                                         else -> Triple("Sản phẩm", "0đ", R.drawable.xoai_granola)
                                     }
-                                    
                                     PrdScreen(
                                         productId = productId,
                                         onBackClick = { currentScreen = Screen.Main },
                                         onViewCart = { currentScreen = Screen.Cart },
                                         onNavigateToMain = {
-                                            // Navigate back to MainScreen when success dialog is dismissed
                                             currentScreen = Screen.Main
                                         }
                                     )
@@ -252,7 +225,7 @@ class MainActivity : ComponentActivity() {
                                 )
                                 Screen.Cart -> CartScreen(
                                     onBackClick = { currentScreen = Screen.Main },
-                                    onOrderClick = { order -> 
+                                    onNavigateToPayment = { order -> // Thay onOrderClick bằng onNavigateToPayment
                                         selectedOrder = order
                                         currentScreen = Screen.Payment
                                     }
@@ -262,11 +235,7 @@ class MainActivity : ComponentActivity() {
                                         PaymentScreen(
                                             order = order,
                                             onBackClick = { currentScreen = Screen.Cart },
-                                            onPlaceOrderClick = {
-                                                // This is no longer needed since we're handling navigation through onNavigateToMain
-                                            },
                                             onNavigateToMain = {
-                                                // Navigate to main screen when the success dialog is dismissed
                                                 currentScreen = Screen.Main
                                             },
                                             onSelectVoucher = {
@@ -274,14 +243,12 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                     } ?: run {
-                                        // Fallback if no order is selected
                                         currentScreen = Screen.Cart
                                     }
                                 }
                                 Screen.SelectVoucher -> SelectVoucherScreen(
                                     onBackClick = { currentScreen = Screen.Payment },
                                     onVoucherSelect = { voucher ->
-                                        // Handle voucher selection
                                         currentScreen = Screen.Payment
                                     }
                                 )
@@ -292,7 +259,7 @@ class MainActivity : ComponentActivity() {
                                             when (destination) {
                                                 "home" -> currentScreen = Screen.Main
                                                 "order" -> currentScreen = Screen.Booked
-                                                "rewards" -> currentScreen = Screen.Coupon // Navigate to itself (refresh)
+                                                "rewards" -> currentScreen = Screen.Coupon
                                                 "differ" -> currentScreen = Screen.Differ
                                                 else -> { /* Handle other navigation */ }
                                             }

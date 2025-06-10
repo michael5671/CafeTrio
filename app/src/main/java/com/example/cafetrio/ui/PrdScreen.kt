@@ -374,17 +374,14 @@ fun PrdScreen(
                                     val userId = "49adf380-a278-4c6b-aecd-7b6b29ff76cc"
                                     val orderRequest = CreateOrderRequest(
                                         fullName = authManager.getSavedFullName() ?: "Guest",
-                                        itemsPrice = product!!.price * quantity,
+                                        totalPrice = product!!.price * quantity,
                                         orderItems = listOf(
                                             OrderItemRequest(
-                                                id = productId,
-                                                name = product!!.name,
-                                                price = product!!.price,
+                                                id = product!!.id,
                                                 amount = quantity
                                             )
                                         ),
                                         phone = authManager.getSavedPhone() ?: "",
-                                        totalPrice = product!!.price * quantity,
                                         userId = userId
                                     )
 

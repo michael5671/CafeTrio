@@ -624,7 +624,7 @@ fun MainScreen(
                             ProductItem(
                                 imageUrl = product.imageUrl,
                                 name = product.name,
-                                price = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).format(product.price),
+                                price = product.price.toString(),
                                 isNew = true,
                                 modifier = Modifier.weight(1f),
                                 onClick = { onNavigate("product/${product.id}") }
