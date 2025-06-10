@@ -28,18 +28,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Intent Filter cho Deep Link -->
-            <intent-filter android:autoVerify="true">
+            <!-- Intent Filter cho Custom Scheme -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="https"
-                    android:host="yourapp.com"
-                    android:pathPrefix="/payment/callback" />
+                    android:scheme="yourapp"
+                    android:host="payment"
+                    android:pathPrefix="/callback" />
             </intent-filter>
+
         </activity>
 
     </application>
-
 </manifest>
